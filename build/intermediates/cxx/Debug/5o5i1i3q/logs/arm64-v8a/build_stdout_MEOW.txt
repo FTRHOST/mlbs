@@ -1,0 +1,2 @@
+[arm64-v8a] Compile++      : MEOW <= main.cpp
+[arm64-v8a] SharedLibrary  : libMEOW.so

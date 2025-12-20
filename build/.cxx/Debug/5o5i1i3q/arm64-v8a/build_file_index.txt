@@ -1,0 +1,2 @@
+/home/petwir/StudioProjects/imgc++ui/src/main/jni/Android.mk
+/home/petwir/StudioProjects/imgc++ui/src/main/jni/Application.mk

@@ -1,0 +1,5 @@
+com.android.support.test-androidTest-0 /home/petwir/StudioProjects/imgc++ui/build/generated/res/resValues/androidTest/debug
+com.android.support.test-updated_navigation_xml-1 /home/petwir/StudioProjects/imgc++ui/build/generated/updated_navigation_xml/debugAndroidTest
+com.android.support.test-mergeDebugAndroidTestResources-2 /home/petwir/StudioProjects/imgc++ui/build/intermediates/incremental/debugAndroidTest/mergeDebugAndroidTestResources/merged.dir
+com.android.support.test-mergeDebugAndroidTestResources-3 /home/petwir/StudioProjects/imgc++ui/build/intermediates/incremental/debugAndroidTest/mergeDebugAndroidTestResources/stripped.dir
+com.android.support.test-debugAndroidTest-4 /home/petwir/StudioProjects/imgc++ui/build/intermediates/merged_res/debugAndroidTest/mergeDebugAndroidTestResources

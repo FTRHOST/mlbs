@@ -1,0 +1,4 @@
+#Thu Dec 18 11:48:42 WIB 2025
+base.0=/home/petwir/StudioProjects/imgc++ui/build/intermediates/dex/debugAndroidTest/mergeDexDebugAndroidTest/classes.dex
+path.0=classes.dex
+renamed.0=classes.dex

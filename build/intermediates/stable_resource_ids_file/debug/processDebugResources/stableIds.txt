@@ -1,0 +1,9 @@
+com.android.support:drawable/$ic_launcher_foreground__0 = 0x7f020000
+com.android.support:layout/activity_main = 0x7f030000
+com.android.support:drawable/ic_launcher_foreground = 0x7f020002
+com.android.support:style/AppTheme = 0x7f060000
+com.android.support:drawable/ic_launcher_background = 0x7f020001
+com.android.support:string/app_name = 0x7f050000
+com.android.support:mipmap/ic_launcher_round = 0x7f040001
+com.android.support:mipmap/ic_launcher = 0x7f040000
+com.android.support:color/backgroundColor = 0x7f010000

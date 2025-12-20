@@ -1,0 +1,62 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.android.support"
+4    android:versionCode="1"
+5    android:versionName="3.2" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="19"
+9        android:targetSdkVersion="30" />
+10
+11    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+11-->/home/petwir/StudioProjects/imgc++ui/src/main/AndroidManifest.xml:6:5-78
+11-->/home/petwir/StudioProjects/imgc++ui/src/main/AndroidManifest.xml:6:22-75
+12    <uses-permission android:name="android.permission.INTERNET" />
+12-->/home/petwir/StudioProjects/imgc++ui/src/main/AndroidManifest.xml:7:5-67
+12-->/home/petwir/StudioProjects/imgc++ui/src/main/AndroidManifest.xml:7:22-64
+13    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+13-->/home/petwir/StudioProjects/imgc++ui/src/main/AndroidManifest.xml:8:5-81
+13-->/home/petwir/StudioProjects/imgc++ui/src/main/AndroidManifest.xml:8:22-78
+14
+15    <application
+15-->/home/petwir/StudioProjects/imgc++ui/src/main/AndroidManifest.xml:9:5-26:19
+16        android:allowBackup="true"
+16-->/home/petwir/StudioProjects/imgc++ui/src/main/AndroidManifest.xml:10:9-35
+17        android:debuggable="true"
+18        android:extractNativeLibs="true"
+19        android:icon="@mipmap/ic_launcher"
+19-->/home/petwir/StudioProjects/imgc++ui/src/main/AndroidManifest.xml:11:9-43
+20        android:label="@string/app_name"
+20-->/home/petwir/StudioProjects/imgc++ui/src/main/AndroidManifest.xml:12:9-41
+21        android:supportsRtl="true"
+21-->/home/petwir/StudioProjects/imgc++ui/src/main/AndroidManifest.xml:13:9-35
+22        android:testOnly="true" >
+23        <activity android:name="com.android.support.MainActivity" >
+23-->/home/petwir/StudioProjects/imgc++ui/src/main/AndroidManifest.xml:14:9-19:20
+23-->/home/petwir/StudioProjects/imgc++ui/src/main/AndroidManifest.xml:14:19-66
+24            <intent-filter>
+24-->/home/petwir/StudioProjects/imgc++ui/src/main/AndroidManifest.xml:15:13-18:29
+25                <action android:name="android.intent.action.MAIN" />
+25-->/home/petwir/StudioProjects/imgc++ui/src/main/AndroidManifest.xml:16:17-69
+25-->/home/petwir/StudioProjects/imgc++ui/src/main/AndroidManifest.xml:16:25-66
+26
+27                <category android:name="android.intent.category.LAUNCHER" />
+27-->/home/petwir/StudioProjects/imgc++ui/src/main/AndroidManifest.xml:17:17-77
+27-->/home/petwir/StudioProjects/imgc++ui/src/main/AndroidManifest.xml:17:27-74
+28            </intent-filter>
+29        </activity>
+30
+31        <service
+31-->/home/petwir/StudioProjects/imgc++ui/src/main/AndroidManifest.xml:20:9-24:43
+32            android:name="com.android.support.Menu"
+32-->/home/petwir/StudioProjects/imgc++ui/src/main/AndroidManifest.xml:21:13-52
+33            android:enabled="true"
+33-->/home/petwir/StudioProjects/imgc++ui/src/main/AndroidManifest.xml:22:13-35
+34            android:exported="false"
+34-->/home/petwir/StudioProjects/imgc++ui/src/main/AndroidManifest.xml:23:13-37
+35            android:stopWithTask="true" />
+35-->/home/petwir/StudioProjects/imgc++ui/src/main/AndroidManifest.xml:24:13-40
+36        <!-- stopWithTask="true" is to prevent game crashing after closing from task manager -->
+37    </application>
+38
+39</manifest>
