@@ -262,30 +262,92 @@ void MonitorBattleState() {
     }
 }
 
-// --- UI minimalis ---
-void DrawConnectionInfo() {
+// --- UI Mod Menu Utama ---
+void DrawModMenu() {
     static bool show_menu = true;
     if (!show_menu) return;
 
-    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowBgAlpha(0.7f);
-    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove;
-    
-    std::string device_ip = "127.0.0.1"; // Placeholder
+    ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
+    ImGui::Begin("MLBS Controller PRO v4.1 (Diagnostic)", &show_menu);
 
-    if (ImGui::Begin("MLBS API Server", &show_menu, window_flags)) {
-        ImGui::Text("API Server Status:");
-        ImGui::SameLine();
-        if (g_IsWebServerReady) {
-            ImGui::TextColored(ImVec4(0, 1, 0, 1), "Running!");
-            ImGui::Text("Access Panel:");
-            ImGui::Text("http://%s:8080/panel", device_ip.c_str());
-            ImGui::Separator();
-            ImGui::Checkbox("Enable Cheat Bypass", &g_State.bypassEnabled);
-        } else {
-            ImGui::TextColored(ImVec4(1, 1, 0, 1), "Starting...");
+    // --- Bagian Main ---
+    ImGui::Text("Pengaturan Fitur Utama");
+    ImGui::Separator();
+    
+    bool bypass_changed = ImGui::Checkbox("Bypass Anti-Cheat", &g_State.bypassEnabled);
+    ImGui::SameLine();
+    ImGui::TextColored(g_State.bypassEnabled ? ImVec4(0,1,0,1) : ImVec4(1,0,0,1), g_State.bypassEnabled ? "ON" : "OFF");
+
+    bool roominfo_changed = ImGui::Checkbox("Aktifkan Room Info", &g_State.roomInfoEnabled);
+    ImGui::SameLine();
+    ImGui::TextColored(g_State.roomInfoEnabled ? ImVec4(0,1,0,1) : ImVec4(1,0,0,1), g_State.roomInfoEnabled ? "ON" : "OFF");
+
+    if (bypass_changed || roominfo_changed) {
+        SaveConfig(g_State);
+    }
+
+    ImGui::Dummy(ImVec2(0.0f, 20.0f)); // Spasi
+
+    // --- Bagian Room Info ---
+    ImGui::Text("Room Info");
+    ImGui::Separator();
+    if (!g_State.roomInfoEnabled) {
+        ImGui::Text("Fitur 'Room Info' sedang dinonaktifkan. Aktifkan di atas.");
+    } else {
+        std::lock_guard<std::mutex> lock(g_State.stateMutex);
+        ImGui::Text("Jumlah pemain terdeteksi: %zu", g_State.players.size());
+        
+        // Tampilkan tabel jika ada pemain
+        if (!g_State.players.empty()) {
+            if (ImGui::BeginTable("PlayersTable", 6, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY)) {
+                ImGui::TableSetupColumn("Camp");
+                ImGui::TableSetupColumn("Name");
+                ImGui::TableSetupColumn("Rank");
+                ImGui::TableSetupColumn("Hero");
+                ImGui::TableSetupColumn("Spell");
+                ImGui::TableSetupColumn("UID");
+                ImGui::TableHeadersRow();
+
+                for (const auto& player : g_State.players) {
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImVec4 camp_color = (player.camp == 1) ? ImVec4(0.2, 0.5, 1, 1) : ImVec4(1, 0.3, 0.3, 1);
+                    ImGui::TextColored(camp_color, "%d", player.camp);
+                    
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::Text("%s", player.name.c_str());
+
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::Text("%s (%d)", player.rank.c_str(), player.rankLevel);
+
+                    ImGui::TableSetColumnIndex(3);
+                    ImGui::Text("%s (%d)", player.heroName.c_str(), player.heroId);
+
+                    ImGui::TableSetColumnIndex(4);
+                    ImGui::Text("%s (%d)", player.spell.c_str(), player.spellId);
+
+                    ImGui::TableSetColumnIndex(5);
+                    ImGui::Text("%s", player.uid.c_str());
+                }
+                ImGui::EndTable();
+            }
         }
     }
+
+    ImGui::Dummy(ImVec2(0.0f, 20.0f)); // Spasi
+
+    // --- Bagian Server Info ---
+    ImGui::Text("Informasi Server & Koneksi");
+    ImGui::Separator();
+    ImGui::Text("Status Server Web:");
+    ImGui::SameLine();
+    if (g_IsWebServerReady) {
+        ImGui::TextColored(ImVec4(0, 1, 0, 1), "Running on port 2626");
+        ImGui::Text("Gunakan skrip atau buka browser di PC/HP lain untuk akses panel.");
+    } else {
+        ImGui::TextColored(ImVec4(1, 1, 0, 1), "Starting...");
+    }
+
     ImGui::End();
 }
 
@@ -408,7 +470,7 @@ EGLBoolean hook_eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui::NewFrame();
 	DrawESP();
-	DrawConnectionInfo(); // Call the new minimal UI
+	DrawModMenu(); // Call the new main menu UI
 	ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     ImGui::EndFrame();
