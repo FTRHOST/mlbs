@@ -10,12 +10,13 @@
 #include <iomanip>
 #include <cctype>
 #include <cstring> // for strcmp
-#include <sstream>
 #include <array>
 #include <unistd.h>
 #include <sys/system_properties.h>
 #include <GLES3/gl3.h>
 #include <EGL/egl.h>
+#include <chrono> // For std::chrono
+#include <thread> // For std::thread
 
 #include "xdl.h"
 #include "dobby.h"
@@ -39,10 +40,25 @@
 #include "obfuscate.h"
 #include "Utils.h"
 
+#include "feature/GameClass.h"
+#include "feature/ToString.h"
+#include "feature/ToString2.h"
+#include "Bypass.h"
+#include "WebServer.h"
+#include "GlobalState.h"
+#include "ConfigManager.h"
+#include "include/nlohmann/json.hpp" // For JSON serialization
+
+// Instance state global
+GlobalState g_State;
+bool g_IsWebServerReady = false;
+
+EGLBoolean (*old_eglSwapBuffers)(EGLDisplay dpy, EGLSurface surface);
+
 std::vector<MemoryPatch> memoryPatches;
 std::vector<uint64_t> offsetVector;
 
-bool setup;
+bool setup; // Still used by ESP or other features
 using namespace ImGui;
 
 #define HOOKAF(ret, func, ...) \
@@ -76,8 +92,8 @@ int32_t _ANativeWindow_getHeight(ANativeWindow* window) {
 	return orig_ANativeWindow_getHeight(window);
 }
 
-bool esp = false;
-bool drawEnemyBox = false;
+bool esp = false; // Still used by ESP
+bool drawEnemyBox = false; // Still used by ESP
 ImVec4 espLineColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 static float espMaxDistance = 999.0f;
 static float linePositionX = 0.5f;
@@ -86,7 +102,7 @@ std::vector<Vector3> espPoints;
 void (*setpitchyaw)(float, float);
 Vector3 (*WorldToScreenPoint)(void* instance, Vector3);
 Vector3 (*get_position)(void* instance);
-void* (*get_main)();
+
 void* (*get_transform)(void* instance);
 void (*old_Player_update)(void* player);
 
@@ -99,24 +115,6 @@ std::vector<ESPBox> espBoxes;
 void Player_update(void* player) {
     if (!player) return;
 
-    /* --- SOURCE MOD SEBELUMNYA (PEMBELAJARAN) ---
-    void* transform = get_transform(player);
-    Vector3 pos = get_position(transform);
-
-    Vector3 bottomPos = { pos.x, pos.y, pos.z };
-    Vector3 topPos = { pos.x, pos.y + 2.0f, pos.z };
-
-    Vector3 screenBottom = WorldToScreenPoint(get_main(), bottomPos);
-    Vector3 screenTop = WorldToScreenPoint(get_main(), topPos);
-
-    if (screenBottom.z >= 1.0f && screenTop.z >= 1.0f) {
-        screenBottom.y = screenHeight - screenBottom.y;
-        screenTop.y = screenHeight - screenTop.y;
-        espBoxes.push_back({ screenTop, screenBottom });
-    }
-    -------------------------------------------- */
-
-    // Panggil original function agar game tidak crash
     if (old_Player_update) {
         old_Player_update(player);
     }
@@ -147,25 +145,147 @@ void DrawESP() {
     espBoxes.clear();
 }
 
+// --- Implementasi Pengumpul Data & Hooks ---
 
-// Our Menu
-void DrawMenu() {
-	auto il2cpp_handle = dlopen("libil2cpp.so", 4);
-    const ImVec2 window_size = ImVec2(700, 600);
-    ImGui::SetNextWindowSize(window_size, ImGuiCond_Once);
-    ImGui::Begin("IMGUI MODMENU", nullptr, ImGuiWindowFlags_NoBringToFrontOnFocus);
+void UpdatePlayerInfo() {
+    __android_log_print(ANDROID_LOG_INFO, "MLBS_HOOK", "UpdatePlayerInfo: Starting.");
+    void *logicBattleManager = nullptr;
+    Il2CppGetStaticFieldValue("Assembly-CSharp.dll", "", "LogicBattleManager", "Instance", &logicBattleManager);
+    if (!logicBattleManager) {
+        __android_log_print(ANDROID_LOG_WARN, "MLBS_HOOK", "UpdatePlayerInfo: LogicBattleManager not found.");
+        return;
+    }
 
-    ImGui::SeparatorText("Unity <ESP>");
-    ImGui::Checkbox("Enable Esp", &esp);
-	ImGui::Checkbox("Draw Enemy Box", &drawEnemyBox);
+    auto battlePlayerList = ((MonoList<void **> *(*)(uintptr_t))SystemData_GetBattlePlayerInfo)((uintptr_t)0);
+    if (!battlePlayerList) {
+        std::lock_guard<std::mutex> lock(g_State.stateMutex);
+        if (!g_State.players.empty()) {
+            g_State.players.clear();
+        }
+        return;
+    }
+    
+    int playerListSize = battlePlayerList->getSize();
+    
+    std::lock_guard<std::mutex> lock(g_State.stateMutex);
+    g_State.players.clear();
 
-	ImGui::SeparatorText("il2cpp <Dumper>");
-	if (ImGui::Button("Dump IL2CPP",ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
-		if (il2cpp_handle) {
-			il2cpp_dump(il2cpp_handle);
-		}
-	}
+    for (int i = 0; i < playerListSize; i++) {
+        void *pawn = battlePlayerList->getItems()[i];
+        if (!pawn) continue;
 
+        // Safety check to prevent crash from race condition in bot matches
+        auto _sName = *(MonoString **)((uintptr_t)pawn + 0x40);
+        if (!_sName) continue;
+        
+        const char* playerName = _sName->CString();
+        __android_log_print(ANDROID_LOG_INFO, "MLBS_HOOK", "UpdatePlayerInfo: Processing player %d: %s", i, playerName ? playerName : "NULL");
+
+        auto lUid = *(uint64_t *)((uintptr_t)pawn + 0x20);
+        auto uiZoneId = *(uint32_t *)((uintptr_t)pawn + 0x60);
+        auto uiRankLevel = *(uint32_t *)((uintptr_t)pawn + 0x128);
+        auto iMythPoint = *(uint32_t *)((uintptr_t)pawn + 0x1cc);
+        auto summonSkillId = *(int *)((uintptr_t)pawn + 0x64);
+        auto heroid = *(uint32_t *)((uintptr_t)pawn + 0x4c);
+        auto iCamp = *(int *)((uintptr_t)pawn + 0x30);
+
+        PlayerData p;
+        p.name = playerName;
+        p.uid = std::to_string(lUid) + "(" + std::to_string(uiZoneId) + ")";
+        p.rank = RankToString(uiRankLevel, iMythPoint);
+        p.spell = SpellToString(summonSkillId);
+        p.heroName = HeroToString(heroid);
+        p.camp = iCamp;
+        // Store raw data
+        p.rankLevel = uiRankLevel;
+        p.spellId = summonSkillId;
+        p.heroId = heroid;
+        g_State.players.push_back(p);
+    }
+}
+
+void (*origOnChangeHeroConfirm)(void*, int, int, int, int, int, int, void*);
+void myOnChangeHeroConfirm(void* instance, int param, int heroId, int skinId, int summonSkillId, int runeId, int runeLevel, void* mapRune) {
+    if (origOnChangeHeroConfirm) {
+        origOnChangeHeroConfirm(instance, param, heroId, skinId, summonSkillId, runeId, runeLevel, mapRune);
+    }
+    
+    if (g_State.battleState == 2) {
+        std::lock_guard<std::mutex> lock(g_State.stateMutex);
+        DraftEvent ev;
+        ev.playerName = "Unknown Player"; 
+        ev.heroName = HeroToString(heroId);
+        ev.eventType = "PICK";
+        g_State.draftEvents.push_back(ev);
+    }
+}
+
+// Hook for Ban Event
+void (*origOnChangeHeroBan)(void*, int, int);
+void myOnChangeHeroBan(void* instance, int campId, int heroId) {
+    if (origOnChangeHeroBan) {
+        origOnChangeHeroBan(instance, campId, heroId);
+    }
+
+    if (g_State.battleState == 2) {
+        std::lock_guard<std::mutex> lock(g_State.stateMutex);
+        DraftEvent ev;
+        ev.playerName = (campId == 1) ? "Team Blue" : "Team Red";
+        ev.heroName = HeroToString(heroId);
+        ev.eventType = "BAN";
+        g_State.draftEvents.push_back(ev);
+    }
+}
+
+
+// --- Logika Inti ---
+
+void MonitorBattleState() {
+    void *logicBattleManager = nullptr;
+    Il2CppGetStaticFieldValue("Assembly-CSharp.dll", "", "LogicBattleManager", "Instance", &logicBattleManager);
+    if (!logicBattleManager) return;
+
+    int currentBattleState = GetBattleState(logicBattleManager);
+
+    if (currentBattleState != g_State.battleState) {
+        std::lock_guard<std::mutex> lock(g_State.stateMutex);
+        g_State.battleState = currentBattleState;
+        if(currentBattleState != 2) {
+            g_State.draftEvents.clear();
+        }
+    }
+    
+    if (currentBattleState == 2 || currentBattleState == 3) {
+        if (g_State.roomInfoEnabled) {
+            UpdatePlayerInfo();
+        }
+    }
+}
+
+// --- UI minimalis ---
+void DrawConnectionInfo() {
+    static bool show_menu = true;
+    if (!show_menu) return;
+
+    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowBgAlpha(0.7f);
+    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove;
+    
+    std::string device_ip = "127.0.0.1"; // Placeholder
+
+    if (ImGui::Begin("MLBS API Server", &show_menu, window_flags)) {
+        ImGui::Text("API Server Status:");
+        ImGui::SameLine();
+        if (g_IsWebServerReady) {
+            ImGui::TextColored(ImVec4(0, 1, 0, 1), "Running!");
+            ImGui::Text("Access Panel:");
+            ImGui::Text("http://%s:8080/panel", device_ip.c_str());
+            ImGui::Separator();
+            ImGui::Checkbox("Enable Cheat Bypass", &g_State.bypassEnabled);
+        } else {
+            ImGui::TextColored(ImVec4(1, 1, 0, 1), "Starting...");
+        }
+    }
     ImGui::End();
 }
 
@@ -179,7 +299,7 @@ void SetupImgui() {
     get_width = (int (*)(void*)) Il2CppGetMethodOffset("UnityEngine.dll", "UnityEngine", "Screen", "get_width", 0);
     get_height = (int (*)(void*)) Il2CppGetMethodOffset("UnityEngine.dll", "UnityEngine", "Screen", "get_height", 0);
 	io.DisplaySize = ImVec2((float)get_width(0), (float)get_height(0));
-	ImGui::StyleColorsDark(); // Set a theme
+	ImGui::StyleColorsDark();
 	ImGuiStyle *style = &ImGui::GetStyle();
 
 	style->Alpha = 1.0f;
@@ -242,7 +362,6 @@ struct UnityEngine_Touch_Fields {
 };
 
 
-EGLBoolean (*old_eglSwapBuffers)(EGLDisplay dpy, EGLSurface surface);
 EGLBoolean hook_eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
 
     static bool is_setup = false;
@@ -252,6 +371,12 @@ EGLBoolean hook_eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
 		SetupImgui();
         is_setup = true;
     }
+
+    // Apply bypass logic
+    ApplyBypass();
+
+    // Monitor game state and update global state
+    MonitorBattleState();
 
     ImGuiIO &io = ImGui::GetIO();
     int (*TouchCount)(void*) = (int (*)(void*)) Il2CppGetMethodOffset("UnityEngine.dll", "UnityEngine", "Input", "get_touchCount", 0);
@@ -283,7 +408,7 @@ EGLBoolean hook_eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui::NewFrame();
 	DrawESP();
-	DrawMenu();
+	DrawConnectionInfo(); // Call the new minimal UI
 	ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     ImGui::EndFrame();
@@ -316,43 +441,39 @@ void *hack_thread(void*) {
      sleep(1);
     } while (!isLibraryLoaded("libil2cpp.so"));
 
-    // =========================================================================
-    // SOURCE MOD SEBELUMNYA (PEMBELAJARAN)
-    /*
-	WorldToScreenPoint = (Vector3(*)(void*, Vector3)) getAbsoluteAddress("libil2cpp.so", 0x5edd234);//Camera WorldToScreenPoint(Vector3 position)
-    get_position = (Vector3 (*)(void *)) getAbsoluteAddress("libil2cpp.so", 0x5f33224);//Transform get_position
-    get_transform = (void *(*)(void*)) getAbsoluteAddress("libil2cpp.so", 0x5f1f9e8);//Component get_transform
-    get_main = (void*(*)()) getAbsoluteAddress("libil2cpp.so", 0x5edd4c4);//Camera get_main
-
-    //private Void Update() { } //0x2e657b0
-    DobbyHook((void *)getAbsoluteAddress("libil2cpp.so", 0x2e657b0), (void *) &Player_update, (void **) &old_Player_update);
-    */
-    // =========================================================================
-
-    // =========================================================================
-    // OFFSET BARU (Silakan ganti 0x0 dengan offset yang baru)
-    // =========================================================================
+    Il2CppAttach("libil2cpp.so");
+    
 	WorldToScreenPoint = (Vector3(*)(void*, Vector3)) getAbsoluteAddress("libil2cpp.so", 0x0);
     get_position = (Vector3 (*)(void *)) getAbsoluteAddress("libil2cpp.so", 0x0);
     get_transform = (void *(*)(void*)) getAbsoluteAddress("libil2cpp.so", 0x0);
-    get_main = (void*(*)()) getAbsoluteAddress("libil2cpp.so", 0x0);
-
-    // Hook function baru di sini
     DobbyHook((void *)getAbsoluteAddress("libil2cpp.so", 0x0), (void *) &Player_update, (void **) &old_Player_update);
-    // =========================================================================
 
-    Il2CppAttach("libil2cpp.so");
-    sleep(5);
+    // Hook untuk event draft pick
+    // Nama kelasnya adalah "BattleReceiveMessage" berdasarkan pencarian sebelumnya
+    void* onChangeHeroConfirmAddr = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "BattleReceiveMessage", "OnChangeHeroConfirm", 7);
+    if (onChangeHeroConfirmAddr) {
+        DobbyHook(onChangeHeroConfirmAddr, (void*)myOnChangeHeroConfirm, (void**)&origOnChangeHeroConfirm);
+        __android_log_print(ANDROID_LOG_INFO, "MLBS_HOOK", "Hooked OnChangeHeroConfirm");
+    } else {
+        __android_log_print(ANDROID_LOG_WARN, "MLBS_HOOK", "Failed to find OnChangeHeroConfirm address.");
+    }
 
-	/* --- Contoh Hook via Symbol (MethodOffset) ---
-	WorldToScreenPoint=(Vector3(*)(void*,Vector3))((uintptr_t)Il2CppGetMethodOffset(OBFUSCATE("UnityEngine.dll"),OBFUSCATE("UnityEngine"),OBFUSCATE("Camera"),OBFUSCATE("WorldToScreenPoint"),1));
-	get_main=(void*(*)())((uintptr_t)Il2CppGetMethodOffset(OBFUSCATE("UnityEngine.dll"),OBFUSCATE("UnityEngine"),OBFUSCATE("Camera"),OBFUS=CATE("get_main"),0));
-	get_position=(Vector3(*)(void*))((uintptr_t)Il2CppGetMethodOffset(OBFUSCATE("UnityEngine.dll"),OBFUSCATE("UnityEngine"),OBFUSCATE("Transform"),OBFUSCATE("get_position"),0));
-	get_transform=(void*(*)(void*))((uintptr_t)Il2CppGetMethodOffset(OBFUSCATE("UnityEngine.dll"),OBFUSCATE("UnityEngine"),OBFUSCATE("Component"),OBFUSCATE("get_transform"),0));
-	DobbyHook(Il2CppGetMethodOffset(OBFUSCATE("Assembly-CSharp.dll"), OBFUSCATE(""), OBFUSCATE("PersonTarget"), OBFUSCATE("Update"), 0), (void*)Player_update, (void**)&old_Player_update);
-	*/
+    // Hook untuk event draft ban
+    void* onChangeHeroBanAddr = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "BattleReceiveMessage", "OnChangeHeroBan", 2);
+    if (onChangeHeroBanAddr) {
+        DobbyHook(onChangeHeroBanAddr, (void*)myOnChangeHeroBan, (void**)&origOnChangeHeroBan);
+        __android_log_print(ANDROID_LOG_INFO, "MLBS_HOOK", "Hooked OnChangeHeroBan");
+    } else {
+        __android_log_print(ANDROID_LOG_WARN, "MLBS_HOOK", "Failed to find OnChangeHeroBan address.");
+    }
+    
+    // Add a delay to prevent race condition on startup
+    sleep(3);
 
-	return nullptr; // same as pthread_exit(nullptr);
+    LoadConfig(g_State);
+    StartWebServer();
+    
+	return nullptr;
 }
 
 __attribute__((constructor))
