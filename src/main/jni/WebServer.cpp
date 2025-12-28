@@ -52,20 +52,154 @@ std::string StateToJson() {
             {"rankLevel", p.rankLevel}
         });
     }
+
+    for (const auto& ev : g_State.draftEvents) {
+        j["draftEvents"].push_back({
+            {"player", ev.playerName},
+            {"hero", ev.heroName},
+            {"event", ev.eventType}
+        });
+    }
     
     __android_log_print(ANDROID_LOG_INFO, "MLBS_WEB_SERVER", "StateToJson: Serialization complete. Releasing lock.");
+    return j.dump(4);
+}
+
+// Fungsi baru untuk serialisasi data room info lengkap
+std::string RoomDataToJson() {
+    __android_log_print(ANDROID_LOG_INFO, "MLBS_WEB_SERVER", "RoomDataToJson: Acquiring lock...");
+    std::lock_guard<std::mutex> lock(g_State.stateMutex);
+    __android_log_print(ANDROID_LOG_INFO, "MLBS_WEB_SERVER", "RoomDataToJson: Lock acquired. Serializing full room data.");
+
+    nlohmann::json j;
+    j["players"] = nlohmann::json::array();
+
+    for (const auto& p : g_State.players) {
+        nlohmann::json player_j;
+        player_j["bAutoConditionNew"] = p.bAutoConditionNew;
+        player_j["bShowSeasonAchieve"] = p.bShowSeasonAchieve;
+        player_j["iStyleBoardId"] = p.iStyleBoardId;
+        player_j["iMatchEffectId"] = p.iMatchEffectId;
+        player_j["iDayBreakNo1Count"] = p.iDayBreakNo1Count;
+        player_j["lUid"] = p.lUid;
+        player_j["bUid"] = p.bUid;
+        player_j["iCamp"] = p.iCamp;
+        player_j["iPos"] = p.iPos;
+        player_j["bAutoReadySelect"] = p.bAutoReadySelect;
+        player_j["_sName"] = p._sName;
+        player_j["bRobot"] = p.bRobot;
+        player_j["heroid"] = p.heroid;
+        player_j["heroskin"] = p.heroskin;
+        player_j["headID"] = p.headID;
+        player_j["uiSex"] = p.uiSex;
+        player_j["country"] = p.country;
+        player_j["uiZoneId"] = p.uiZoneId;
+        player_j["summonSkillId"] = p.summonSkillId;
+        player_j["runeId"] = p.runeId;
+        player_j["mapTalentTree"] = p.mapTalentTree;
+        player_j["mRuneSkill2023"] = p.mRuneSkill2023;
+        player_j["runeLv"] = p.runeLv;
+        player_j["skinlist"] = p.skinlist;
+        player_j["facePath"] = p.facePath;
+        player_j["faceBorder"] = p.faceBorder;
+        player_j["bStarVip"] = p.bStarVip;
+        player_j["bMCStarVip"] = p.bMCStarVip;
+        player_j["bMCStarVipPlus"] = p.bMCStarVipPlus;
+        player_j["ulRoomID"] = p.ulRoomID;
+        player_j["iConBlackRoomId"] = p.iConBlackRoomId;
+        player_j["banHero"] = p.banHero;
+        player_j["vCanSelectHero"] = p.vCanSelectHero;
+        player_j["vCanPickHero"] = p.vCanPickHero;
+        player_j["uiBattlePlayerType"] = p.uiBattlePlayerType;
+        player_j["sThisLoginCountry"] = p.sThisLoginCountry;
+        player_j["sCreateRoleCountry"] = p.sCreateRoleCountry;
+        player_j["uiLanguage"] = p.uiLanguage;
+        player_j["bIsOpenLive"] = p.bIsOpenLive;
+        player_j["iTeamId"] = p.iTeamId;
+        player_j["iTeamNationId"] = p.iTeamNationId;
+        player_j["_steamName"] = p._steamName;
+        player_j["_steamSimpleName"] = p._steamSimpleName;
+        player_j["iCertify"] = p.iCertify;
+        player_j["lsEffectSkins"] = p.lsEffectSkins;
+        player_j["lsComEffSkins"] = p.lsComEffSkins;
+        player_j["vMissions"] = p.vMissions;
+        player_j["uiRankLevel"] = p.uiRankLevel;
+        player_j["uiPVPRank"] = p.uiPVPRank;
+        player_j["bRankReview"] = p.bRankReview;
+        player_j["iElo"] = p.iElo;
+        player_j["uiRoleLevel"] = p.uiRoleLevel;
+        player_j["bNewPlayer"] = p.bNewPlayer;
+        player_j["iRoad"] = p.iRoad;
+        player_j["uiSkinSource"] = p.uiSkinSource;
+        player_j["iFighterType"] = p.iFighterType;
+        player_j["iWorldCupSupportCountry"] = p.iWorldCupSupportCountry;
+        player_j["iHeroLevel"] = p.iHeroLevel;
+        player_j["iHeroSubLevel"] = p.iHeroSubLevel;
+        player_j["iHeroPowerLevel"] = p.iHeroPowerLevel;
+        player_j["iActCamp"] = p.iActCamp;
+        player_j["vTitle"] = p.vTitle;
+        player_j["mHeroMission"] = p.mHeroMission;
+        player_j["vEmoji"] = p.vEmoji;
+        player_j["vItemBuff"] = p.vItemBuff;
+        player_j["vMapPaint"] = p.vMapPaint;
+        player_j["mSkinPaint"] = p.mSkinPaint;
+        player_j["sClientVersion"] = p.sClientVersion;
+        player_j["uiHolyStatue"] = p.uiHolyStatue;
+        player_j["uiKamon"] = p.uiKamon;
+        player_j["uiUserMapID"] = p.uiUserMapID;
+        player_j["iSurviveRank"] = p.iSurviveRank;
+        player_j["iDefenceRankID"] = p.iDefenceRankID;
+        player_j["iLeagueWCNum"] = p.iLeagueWCNum;
+        player_j["iLeagueFCNum"] = p.iLeagueFCNum;
+        player_j["iMPLCertifyTime"] = p.iMPLCertifyTime;
+        player_j["iMPLCertifyID"] = p.iMPLCertifyID;
+        player_j["mapBattleAttr"] = p.mapBattleAttr;
+        player_j["iHeroUseCount"] = p.iHeroUseCount;
+        player_j["iMythPoint"] = p.iMythPoint;
+        player_j["bMythEvaled"] = p.bMythEvaled;
+        player_j["iDefenceFlag"] = p.iDefenceFlag;
+        player_j["iDefenPoint"] = p.iDefenPoint;
+        player_j["iDefenceMap"] = p.iDefenceMap;
+        player_j["iAIType"] = p.iAIType;
+        player_j["iAISeed"] = p.iAISeed;
+        player_j["sAiName"] = p.sAiName;
+        player_j["iWarmValue"] = p.iWarmValue;
+        player_j["uiAircraftIDChooose"] = p.uiAircraftIDChooose;
+        player_j["uiHeroIDChoose"] = p.uiHeroIDChoose;
+        player_j["uiHeroSkinIDChoose"] = p.uiHeroSkinIDChoose;
+        player_j["uiMapIDChoose"] = p.uiMapIDChoose;
+        player_j["uiMapSkinIDChoose"] = p.uiMapSkinIDChoose;
+        player_j["uiDefenceRankScore"] = p.uiDefenceRankScore;
+        player_j["bBanChat"] = p.bBanChat;
+        player_j["iChatBanFinishTime"] = p.iChatBanFinishTime;
+        player_j["iChatBanBattleNum"] = p.iChatBanBattleNum;
+        player_j["vFastChat"] = p.vFastChat;
+        player_j["vWantS"] = p.vWantS;
+
+        j["players"].push_back(player_j);
+    }
+
+    __android_log_print(ANDROID_LOG_INFO, "MLBS_WEB_SERVER", "RoomDataToJson: Serialization complete. Releasing lock.");
     return j.dump(4);
 }
 
 
 // Fungsi untuk menjalankan server di thread terpisah
 void RunServerLoop() {
-    // Endpoint untuk mendapatkan state game saat ini
+    // Endpoint untuk mendapatkan state game saat ini (ringkas)
     svr->Get("/state", [](const httplib::Request &, httplib::Response &res) {
         __android_log_print(ANDROID_LOG_INFO, "MLBS_WEB_SERVER", "Received /state request");
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(StateToJson(), "application/json");
         __android_log_print(ANDROID_LOG_INFO, "MLBS_WEB_SERVER", "/state request handled");
+    });
+
+    // Endpoint baru untuk mendapatkan data room info lengkap
+    svr->Get("/inforoom", [](const httplib::Request &, httplib::Response &res) {
+        __android_log_print(ANDROID_LOG_INFO, "MLBS_WEB_SERVER", "Received /inforoom request");
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_content(RoomDataToJson(), "application/json");
+        __android_log_print(ANDROID_LOG_INFO, "MLBS_WEB_SERVER", "/inforoom request handled");
     });
 
     // Endpoint untuk mengkonfigurasi mod
