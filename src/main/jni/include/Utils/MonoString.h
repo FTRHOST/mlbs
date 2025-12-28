@@ -1,7 +1,51 @@
 #pragma once
 
-long mono_address = 0;
+#include <string>
+#include <vector>
 
+// Note: This file combines definitions from scv1's Unity.h and mlbs's MonoString.h
+
+// From scv1/unity/Unity.h
+template <typename T>
+struct monoArray
+{
+    void* klass;
+    void* monitor;
+    void* bounds;
+    int   max_length;
+    T     vector [1]; // Changed from void* to T for type safety
+    int getLength()
+    {
+        return max_length;
+    }
+    T* getPointer()
+    {
+        return vector;
+    }
+};
+
+template <typename T>
+struct monoList {
+    void *unk0;
+    void *unk1;
+    monoArray<T> *items;
+    int size;
+    int version;
+
+    T* getItems(){
+        return items->getPointer();
+    }
+
+    int getSize(){
+        return size;
+    }
+
+    int getVersion(){
+        return version;
+    }
+};
+
+// From mlbs/include/Utils/MonoString.h
 std::string utf16le_to_utf8(const std::u16string &u16str) {    
     if (u16str.empty()) {
     	return std::string();
@@ -53,7 +97,7 @@ typedef struct _monoString {
 	int length;
     char chars[1];
 	const char *toChars() {       
-    	std::u16string ss((char16_t *) getChars(), 0, getLength());     
+    	std::u16string ss((char16_t *) getChars(), getLength());     
 	    std::string str = utf16le_to_utf8(ss);  
 	    return str.c_str();   
 	}
@@ -63,95 +107,21 @@ typedef struct _monoString {
 	int getLength() {       
     	return length;  
 	}    
-	std::string get_string() {             
-    	return std::string(toChars());  
+	std::string CString() {
+		if (length <= 0) return "";
+		std::u16string u16_str((char16_t*)chars, length);
+		return utf16le_to_utf8(u16_str);
 	}
 } monoString;
+
+// Forward declaration from dobby.h to avoid including the whole header
+#ifndef RTLD_NOLOAD
+#define RTLD_NOLOAD 4
+#endif
+extern void* dlsym(void* handle, const char* symbol);
+extern void* dlopen(const char* filename, int flag);
 
 monoString *il2cpp_string_new (const char *str){
     static const auto __il2cpp_string_new = (monoString*(*)(const char*))dlsym(dlopen("libil2cpp.so", RTLD_NOLOAD), "il2cpp_string_new");
     return __il2cpp_string_new(str);
 }
-
-
-	template<typename T>
-   typedef struct monoArray {
-    void *klass;
-    void *monitor;
-    void *bounds;
-    int capacity;
-	int   max_length;
-    T m_Items[0];
-
-    int getCapacity() {
-        return capacity;
-    }
-	
-	int getLength() const { return max_length; }
-
-    T *getPointer() {
-        return m_Items;
-    }
-	
-	
-    
-    template<typename V = T>
-    std::vector<V> toCPPlist() {
-        std::vector<V> ret;
-        for (int i = 0; i < capacity; i++)
-            ret.push_back(m_Items[i]);
-        return std::move(ret);
-    }
-
-    void copyFrom(std::vector<T> vec) {
-        copyFrom(vec.data(), vec.size());
-    }
-    
-    void copyFrom(T *arr, int size) {
-        if (size > capacity)
-            Resize(size);
-        memcpy(arr, m_Items, capacity * sizeof(T));
-    }
-
-    void copyTo(T *arr) {
-        memcpy(arr, m_Items, sizeof(T) * capacity);
-    }
-    
-    T operator[] (int index) {
-        return m_Items[index];
-    }
-
-    void Resize(int newSize) {
-        if (newSize <= capacity) return;
-        T* newArr = new T[newSize];
-        memcpy(newArr, m_Items, capacity * sizeof(T));
-        capacity = newSize;
-    }
-	
-	monoArray<T>* MonoCreate(int size) {
-		monoArray<T> *monoArr = (monoArray<T> *)malloc(sizeof(monoArray) + sizeof(T) * size);
-        monoArr->capacity = size;
-        return monoArr;
-	}
-
-    template<typename t>
-    static monoArray<t> *Create(int size) {
-        monoArray<t> *monoArr = (monoArray<t> *)malloc(sizeof(monoArray) + sizeof(t) * size);
-        monoArr->capacity = size;
-        return monoArr;
-    }
-    
-    template<typename t>
-    static monoArray<t> *Create(std::vector<t> vec) {
-        return Create<t>(vec.data(), vec.size());
-    }
-    
-    template<typename t>
-    static monoArray<t> *Create(T *arr, int size) {
-        monoArray<t> *monoArr = Create<t>(size);
-        for (int i = 0; i < size; i++)
-            monoArr->m_Items[i] = arr[i];
-        return monoArr;
-    }
-
-};

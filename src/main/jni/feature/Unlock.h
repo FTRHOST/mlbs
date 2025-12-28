@@ -8,9 +8,8 @@ struct CmdHeroSkin : Il2CppObject {
     uint32_t iId;
     uint32_t iLimitTime;
     uint32_t iSource;
-    uint32_t iLimitTimeMagicChess;
-    uint32_t iGetTime;
 };
+
 
 struct CmdHeroStatue : Il2CppObject {
     uint32_t iId;
@@ -18,8 +17,7 @@ struct CmdHeroStatue : Il2CppObject {
     uint32_t iSource;
 };
 bool ndUnlockSkin3 = true;
-bool ndUnlockSkin = false, ndUnlockSkin2 = false;
-bool ndUnlockSkin22 = true;
+bool ndUnlockSkin = false;
 
 
 DefineHook(CmdHeroSkin *, GetHeroSkin, (void * unk, uintptr_t m_heroskins, uint skinid)) {
@@ -34,8 +32,6 @@ DefineHook(CmdHeroSkin *, GetHeroSkin, (void * unk, uintptr_t m_heroskins, uint 
         instance->iId = skinid;
         instance->iLimitTime = 0;
         instance->iSource = 0;
-        instance->iLimitTimeMagicChess= 0;
-        instance->iGetTime = 0;
     }
     return instance;
 }
@@ -52,8 +48,6 @@ DefineHook(CmdHeroSkin *, GetMCLimitSkin, (void * unk, uint skinId)) {
         instance->iId = skinId;
         instance->iLimitTime = 0;
         instance->iSource = 0;
-        instance->iLimitTimeMagicChess= 0;
-        instance->iGetTime = 0;
     }
     return instance;
 }
@@ -91,8 +85,6 @@ DefineHook(CmdHeroSkin *, IsHaveSkin, (void * unk, int skinid)) {
         instance->iId = skinid;
         instance->iLimitTime = 0;
         instance->iSource = 0;
-        instance->iLimitTimeMagicChess= 0;
-        instance->iGetTime = 0;
     }
     return instance;
 }
@@ -109,8 +101,6 @@ DefineHook(CmdHeroSkin *, IsHaveSkinForever, (void * unk, int skinid)) {
         instance->iId = skinid;
         instance->iLimitTime = 0;
         instance->iSource = 0;
-        instance->iLimitTimeMagicChess= 0;
-        instance->iGetTime = 0;
     }
     return instance;
 }
@@ -147,22 +137,22 @@ DefineHook(CmdHeroStatue *, IsHaveStatueForever, (void * unk, uint32_t statueid)
     return instance;
 }
 DefineHook(uint, GetExpiredCardSkinLimitTime, (void * unk, uint32_t skinid)) {
-    if (ndUnlockSkin2) {
+    if (ndUnlockSkin) {
         return oGetExpiredCardSkinLimitTime(unk,skinid);
     }
 }
 DefineHook(bool, GetLeaderSkinBForbid, (void * unk, uint32_t skinid)) {
-    if (ndUnlockSkin2) {
+    if (ndUnlockSkin) {
         return true;
     }
 }
 DefineHook(bool, BRankHeroCanUse, (void * unk, uint32_t skinid)) {
-    if (ndUnlockSkin2) {
+    if (ndUnlockSkin) {
         return true;
     }
 }
 DefineHook(bool, ContainSkin, (void * unk, uint32_t skinid)) {
-    if (ndUnlockSkin2) {
+    if (ndUnlockSkin) {
         return false;
     }
 }
@@ -219,11 +209,18 @@ DefineHook(void, SendSelectSkin, (uintptr_t thiz, uint32_t skinid, uint32_t hero
         m_SkinID = 0;
         return oSendSelectSkin(thiz, skinid, heroid);
     }
+
+    auto UIChooseHero_BatttleSelectSkin = (void (*)(uintptr_t, uint64_t, uint32_t)) (Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "UIChooseHero", "BatttleSelectSkin", 2));
+
+    uint64_t m_uiID;
+    Il2CppGetStaticFieldValue("Assembly-CSharp.dll", "", "SystemData", "m_uiID", &m_uiID);
+    UIChooseHero_BatttleSelectSkin(thiz, m_uiID, skinid);
+
     m_HeroID = heroid;
     m_SkinID = skinid;
 }
 DefineHook(void, RefreshSkinDic, (uintptr_t thiz, uint32_t heroid, uint skinid, uint64_t uid )) {
-    if (ndUnlockSkin2) {
+    if (ndUnlockSkin) {
         uint64_t m_uiID;
         Il2CppGetStaticFieldValue("Assembly-CSharp.dll", "", "SystemData", "m_uiID", &m_uiID);
         return oRefreshSkinDic(thiz, m_HeroID, m_SkinID, m_uiID);
@@ -234,7 +231,7 @@ DefineHook(void, RefreshSkinDic, (uintptr_t thiz, uint32_t heroid, uint skinid, 
 
 
 DefineHook(void, RefreshHeroSkinShow, (uintptr_t thiz, uint64_t uid, uint32_t heroid, uint skinid)) {
-    if (ndUnlockSkin2) {
+    if (ndUnlockSkin) {
         uint64_t m_uiID;
         Il2CppGetStaticFieldValue("Assembly-CSharp.dll", "", "SystemData", "m_uiID", &m_uiID);
         return oRefreshHeroSkinShow(thiz, m_uiID, m_HeroID, m_SkinID);
@@ -251,7 +248,7 @@ void BatttleSelectSkin2(void* thiz_, uint64_t uid, uint skinid) {
     }
 }
 DefineHook(void, BatttleSelectSkin, (uintptr_t thiz, uint64_t uid, uint skinid)) {
-    if (ndUnlockSkin2) {
+    if (ndUnlockSkin) {
         uint64_t m_uiID;
         Il2CppGetStaticFieldValue("Assembly-CSharp.dll", "", "SystemData", "m_uiID", &m_uiID);
         return oBatttleSelectSkin(thiz, m_uiID, m_SkinID);
@@ -276,7 +273,7 @@ DefineHook(void, SendUseSkin, (void * thiz, uint32_t skinid, bool)) {
     m_SkinID = skinid;
 }
 DefineHook(void, SetPlayerData, (uintptr_t thiz, uintptr_t playerinfo, uint32_t uiSelfCamp)) {
-    if (ndUnlockSkin2) {
+    if (ndUnlockSkin) {
         if (m_SkinID) {
             if (!oIsHaveSkin(0, m_SkinID) || !oIsHaveSkinForever(0, m_SkinID)) {
                 uint64_t m_uiID;
@@ -293,7 +290,7 @@ DefineHook(void, SetPlayerData, (uintptr_t thiz, uintptr_t playerinfo, uint32_t 
     return oSetPlayerData(thiz, playerinfo, uiSelfCamp);
 }
 DefineHook(void, SetPlayerData_, (uintptr_t thiz, uintptr_t playerinfo)) {
-    if (ndUnlockSkin2) {
+    if (ndUnlockSkin) {
         if (m_SkinID) {
             if (!oIsHaveSkin(0, m_SkinID) || !oIsHaveSkinForever(0, m_SkinID)) {
                 uint64_t m_uiID;
@@ -311,7 +308,7 @@ DefineHook(void, SetPlayerData_, (uintptr_t thiz, uintptr_t playerinfo)) {
 }
 
 DefineHook(void, AddPlayerInfo, (uintptr_t playerinfo, uint selfCamp, uintptr_t roomdata, bool ignoreEmblem)) {
-    if (ndUnlockSkin2) {
+    if (ndUnlockSkin) {
         if (m_SkinID) {
             if (!oIsHaveSkin(0, m_SkinID) || !oIsHaveSkinForever(0, m_SkinID)) {
                 uint64_t m_uiID;
@@ -329,7 +326,7 @@ DefineHook(void, AddPlayerInfo, (uintptr_t playerinfo, uint selfCamp, uintptr_t 
 }
 
 DefineHook(void, AddPlayerInfo_, (uintptr_t playerinfo, uintptr_t roomdata)) {
-    if (ndUnlockSkin2) {
+    if (ndUnlockSkin) {
         if (m_SkinID) {
             if (!oIsHaveSkin(0, m_SkinID) || !oIsHaveSkinForever(0, m_SkinID)) {
                 uint64_t m_uiID;
@@ -346,7 +343,7 @@ DefineHook(void, AddPlayerInfo_, (uintptr_t playerinfo, uintptr_t roomdata)) {
     return oAddPlayerInfo_(playerinfo, roomdata);
 }
 DefineHook(void, OnSetSelfBattlePlayerInfo, (uintptr_t thiz,  uintptr_t playerinfo)) {
-    if (ndUnlockSkin2) {
+    if (ndUnlockSkin) {
         if (m_SkinID) {
             if (!oIsHaveSkin(0, m_SkinID) || !oIsHaveSkinForever(0, m_SkinID)) {
                 uint64_t m_uiID;
@@ -362,17 +359,17 @@ DefineHook(void, OnSetSelfBattlePlayerInfo, (uintptr_t thiz,  uintptr_t playerin
     }
     return oOnSetSelfBattlePlayerInfo(thiz, playerinfo);
 }
-// ==================================================================================================================================== //
+// ====================================================================================================================================
 DefineHook(void, CheckHeroDefaultSkin, (uintptr_t thiz, uint32_t heroid ,uint skinid )) {
-    if (ndUnlockSkin2) {
+    if (ndUnlockSkin) {
         return oCheckHeroDefaultSkin(thiz, m_HeroID, m_SkinID);
     }
     m_HeroID = *(uint32_t *) ((uintptr_t) thiz + UIRankHero_ChangeShow_iSelfHero);
     m_SkinID = skinid;
 }
-// ==================================================================================================================================== //
-DefineHook(void, SendRawData, (void * thiz, uint uiMsgID, MonoArray<uint8_t> * rawData, int rawDataSize, int eSocketType, int packReliType, bool bNeedLockRequestIndex, int expectedSize)) {
-    if (ndUnlockSkin2) {
+// ====================================================================================================================================
+DefineHook(void, SendRawData, (void * thiz, uint uiMsgID, void * rawData, int rawDataSize, int eSocketType, int packReliType, bool bNeedLockRequestIndex, int expectedSize)) {
+    if (ndUnlockSkin) {
         if (uiMsgID == 1015  || uiMsgID == 1016 || uiMsgID == 1019 || uiMsgID == 1020
             || uiMsgID == 1031  || uiMsgID == 1032  || uiMsgID == 1035 || uiMsgID == 1036
             || uiMsgID == 1160  || uiMsgID == 1161  || uiMsgID == 1162  || uiMsgID == 1163
@@ -394,12 +391,10 @@ DefineHook(void, SendRawData, (void * thiz, uint uiMsgID, MonoArray<uint8_t> * r
     return oSendRawData(thiz, uiMsgID, rawData, rawDataSize, eSocketType, packReliType, bNeedLockRequestIndex, expectedSize);
 }
 
-extern bool enableBypass;
-
 void UnlockSkin() {
-    if (enableBypass) {
+    if (g_State.unlockSkinEnabled) {
         ndUnlockSkin = true;
-        ndUnlockSkin2 = true;
+        ndUnlockSkin = true;
         DobbyHook((void *) SystemData_GetHeroSkin, (void *) GetHeroSkin, (void **) &oGetHeroSkin);
         DobbyHook((void *) SystemData_GetMCLimitSkin, (void *) GetMCLimitSkin, (void **) &oGetMCLimitSkin);
         DobbyHook((void *) SystemData_GetHeroHolyStatue, (void *) GetHeroHolyStatue, (void **) &oGetHeroHolyStatue);
@@ -429,6 +424,8 @@ void UnlockSkin() {
         DobbyHook((void *) GameServerConfig_SendRawData, (void *) SendRawData, (void **) &oSendRawData);
         DobbyHook((void *) ChooseHeroMgr_OnSetSelfBattlePlayerInfo, (void *) OnSetSelfBattlePlayerInfo, (void **) &oOnSetSelfBattlePlayerInfo);
 
+    } else {
+        ndUnlockSkin = false;
+        ndUnlockSkin = false;
     }
 }
-

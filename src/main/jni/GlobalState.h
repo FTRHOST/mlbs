@@ -18,23 +18,14 @@ struct PlayerData {
     int rankLevel;
 };
 
-// Info untuk satu event draft
-struct DraftEvent {
-    std::string playerName;
-    std::string heroName;
-    std::string eventType; // "PICK" or "BAN"
-};
-
 // State global aplikasi
 struct GlobalState {
-    int battleState = -1;
-    std::vector<PlayerData> players;
-    std::vector<DraftEvent> draftEvents;
-    bool bypassEnabled = true;
+    std::mutex stateMutex;
+    int battleState = 0; // 0: Lobby, 2: Draft, 3: In-Game
     bool roomInfoEnabled = true;
-
-    // Mutex untuk melindungi akses data dari thread yang berbeda
-    mutable std::mutex stateMutex;
+    bool webServerEnabled = true;
+    bool showMenu = true;
+    std::vector<PlayerData> players;
 };
 
 // Deklarasi instance global

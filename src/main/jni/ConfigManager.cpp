@@ -9,7 +9,7 @@
 #include "include/nlohmann/json.hpp"
 
 // Forward declaration for internal save function
-static void _SaveConfig_Internal(const GlobalState& state);
+static void _SaveConfig_Internal(GlobalState& state);
 
 void LoadConfig(GlobalState& state) {
     std::string configPath = getDynamicConfigPath();
@@ -29,11 +29,14 @@ void LoadConfig(GlobalState& state) {
     nlohmann::json j;
     try {
         configFile >> j;
-        if (j.contains("bypassEnabled") && j["bypassEnabled"].is_boolean()) {
-            state.bypassEnabled = j["bypassEnabled"];
-        }
         if (j.contains("roomInfoEnabled") && j["roomInfoEnabled"].is_boolean()) {
             state.roomInfoEnabled = j["roomInfoEnabled"];
+        }
+        if (j.contains("webServerEnabled") && j["webServerEnabled"].is_boolean()) {
+            state.webServerEnabled = j["webServerEnabled"];
+        }
+        if (j.contains("showMenu") && j["showMenu"].is_boolean()) {
+            state.showMenu = j["showMenu"];
         }
         __android_log_print(ANDROID_LOG_INFO, "MLBS_CONFIG", "Successfully loaded config from %s", configPath.c_str());
     } catch (const nlohmann::json::parse_error& e) {
@@ -42,7 +45,7 @@ void LoadConfig(GlobalState& state) {
 }
 
 // Internal function to save config without locking mutex
-static void _SaveConfig_Internal(const GlobalState& state) {
+static void _SaveConfig_Internal(GlobalState& state) {
     std::string filesDir = getDynamicFilesDir();
     if (filesDir.empty()) {
         __android_log_print(ANDROID_LOG_ERROR, "MLBS_CONFIG", "Failed to get dynamic files directory for saving.");
@@ -62,8 +65,9 @@ static void _SaveConfig_Internal(const GlobalState& state) {
     }
 
     nlohmann::json j;
-    j["bypassEnabled"] = state.bypassEnabled;
     j["roomInfoEnabled"] = state.roomInfoEnabled;
+    j["webServerEnabled"] = state.webServerEnabled;
+    j["showMenu"] = state.showMenu;
 
     std::ofstream configFile(configPath);
     if (!configFile.is_open()) {
@@ -75,7 +79,7 @@ static void _SaveConfig_Internal(const GlobalState& state) {
     __android_log_print(ANDROID_LOG_INFO, "MLBS_CONFIG", "Successfully saved config to %s", configPath.c_str());
 }
 
-void SaveConfig(const GlobalState& state) {
+void SaveConfig(GlobalState& state) {
     std::lock_guard<std::mutex> lock(state.stateMutex);
     _SaveConfig_Internal(state);
 }

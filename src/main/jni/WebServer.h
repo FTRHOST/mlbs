@@ -1,4 +1,10 @@
-#pragma once
+#ifndef WEBSERVER_H
+#define WEBSERVER_H
 
-// Deklarasi fungsi untuk memulai web server
+#include <string>
+
+// Deklarasi fungsi untuk memulai dan menghentikan web server
 void StartWebServer();
+void StopWebServer();
+
+#endif // WEBSERVER_H

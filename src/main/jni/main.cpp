@@ -156,7 +156,7 @@ void UpdatePlayerInfo() {
         return;
     }
 
-    auto battlePlayerList = ((MonoList<void **> *(*)(uintptr_t))SystemData_GetBattlePlayerInfo)((uintptr_t)0);
+    auto battlePlayerList = ((monoList<void *> *(*)(uintptr_t))SystemData_GetBattlePlayerInfo)((uintptr_t)0);
     if (!battlePlayerList) {
         std::lock_guard<std::mutex> lock(g_State.stateMutex);
         if (!g_State.players.empty()) {
@@ -204,40 +204,7 @@ void UpdatePlayerInfo() {
     }
 }
 
-void (*origOnChangeHeroConfirm)(void*, int, int, int, int, int, int, void*);
-void myOnChangeHeroConfirm(void* instance, int param, int heroId, int skinId, int summonSkillId, int runeId, int runeLevel, void* mapRune) {
-    if (origOnChangeHeroConfirm) {
-        origOnChangeHeroConfirm(instance, param, heroId, skinId, summonSkillId, runeId, runeLevel, mapRune);
-    }
-    
-    if (g_State.battleState == 2) {
-        std::lock_guard<std::mutex> lock(g_State.stateMutex);
-        DraftEvent ev;
-        ev.playerName = "Unknown Player"; 
-        ev.heroName = HeroToString(heroId);
-        ev.eventType = "PICK";
-        g_State.draftEvents.push_back(ev);
-    }
-}
-
 // Hook for Ban Event
-void (*origOnChangeHeroBan)(void*, int, int);
-void myOnChangeHeroBan(void* instance, int campId, int heroId) {
-    if (origOnChangeHeroBan) {
-        origOnChangeHeroBan(instance, campId, heroId);
-    }
-
-    if (g_State.battleState == 2) {
-        std::lock_guard<std::mutex> lock(g_State.stateMutex);
-        DraftEvent ev;
-        ev.playerName = (campId == 1) ? "Team Blue" : "Team Red";
-        ev.heroName = HeroToString(heroId);
-        ev.eventType = "BAN";
-        g_State.draftEvents.push_back(ev);
-    }
-}
-
-
 // --- Logika Inti ---
 
 void MonitorBattleState() {
@@ -251,7 +218,7 @@ void MonitorBattleState() {
         std::lock_guard<std::mutex> lock(g_State.stateMutex);
         g_State.battleState = currentBattleState;
         if(currentBattleState != 2) {
-            g_State.draftEvents.clear();
+            
         }
     }
     
@@ -264,25 +231,36 @@ void MonitorBattleState() {
 
 // --- UI Mod Menu Utama ---
 void DrawModMenu() {
-    static bool show_menu = true;
-    if (!show_menu) return;
+    // Kontrol visibilitas menu sekarang menggunakan state global
+    if (!g_State.showMenu) return;
 
     ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
-    ImGui::Begin("MLBS Controller PRO v4.1 (Diagnostic)", &show_menu);
+    // Berikan state global ke ImGui::Begin, tombol 'X' akan memodifikasinya
+    ImGui::Begin("MLBS Controller PRO v4.1 (Diagnostic)", &g_State.showMenu);
 
     // --- Bagian Main ---
     ImGui::Text("Pengaturan Fitur Utama");
     ImGui::Separator();
     
-    bool bypass_changed = ImGui::Checkbox("Bypass Anti-Cheat", &g_State.bypassEnabled);
-    ImGui::SameLine();
-    ImGui::TextColored(g_State.bypassEnabled ? ImVec4(0,1,0,1) : ImVec4(1,0,0,1), g_State.bypassEnabled ? "ON" : "OFF");
+    // Tambahkan checkbox untuk mengontrol visibilitas menu itu sendiri
+    bool showmenu_changed = ImGui::Checkbox("Tampilkan Menu", &g_State.showMenu);
 
     bool roominfo_changed = ImGui::Checkbox("Aktifkan Room Info", &g_State.roomInfoEnabled);
     ImGui::SameLine();
     ImGui::TextColored(g_State.roomInfoEnabled ? ImVec4(0,1,0,1) : ImVec4(1,0,0,1), g_State.roomInfoEnabled ? "ON" : "OFF");
 
-    if (bypass_changed || roominfo_changed) {
+    bool webserver_changed = ImGui::Checkbox("Aktifkan Web Server", &g_State.webServerEnabled);
+    ImGui::SameLine();
+    ImGui::TextColored(g_State.webServerEnabled ? ImVec4(0,1,0,1) : ImVec4(1,0,0,1), g_State.webServerEnabled ? "ON" : "OFF");
+
+    if (showmenu_changed || roominfo_changed || webserver_changed) {
+        if (webserver_changed) {
+            if (g_State.webServerEnabled) {
+                StartWebServer();
+            } else {
+                StopWebServer();
+            }
+        }
         SaveConfig(g_State);
     }
 
@@ -345,11 +323,16 @@ void DrawModMenu() {
         ImGui::TextColored(ImVec4(0, 1, 0, 1), "Running on port 2626");
         ImGui::Text("Gunakan skrip atau buka browser di PC/HP lain untuk akses panel.");
     } else {
-        ImGui::TextColored(ImVec4(1, 1, 0, 1), "Starting...");
+        if (g_State.webServerEnabled) {
+            ImGui::TextColored(ImVec4(1, 1, 0, 1), "Starting...");
+        } else {
+            ImGui::TextColored(ImVec4(1, 0, 0, 1), "OFF");
+        }
     }
 
     ImGui::End();
 }
+
 
 
 void SetupImgui() {
@@ -434,9 +417,6 @@ EGLBoolean hook_eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
         is_setup = true;
     }
 
-    // Apply bypass logic
-    ApplyBypass();
-
     // Monitor game state and update global state
     MonitorBattleState();
 
@@ -510,30 +490,16 @@ void *hack_thread(void*) {
     get_transform = (void *(*)(void*)) getAbsoluteAddress("libil2cpp.so", 0x0);
     DobbyHook((void *)getAbsoluteAddress("libil2cpp.so", 0x0), (void *) &Player_update, (void **) &old_Player_update);
 
-    // Hook untuk event draft pick
-    // Nama kelasnya adalah "BattleReceiveMessage" berdasarkan pencarian sebelumnya
-    void* onChangeHeroConfirmAddr = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "BattleReceiveMessage", "OnChangeHeroConfirm", 7);
-    if (onChangeHeroConfirmAddr) {
-        DobbyHook(onChangeHeroConfirmAddr, (void*)myOnChangeHeroConfirm, (void**)&origOnChangeHeroConfirm);
-        __android_log_print(ANDROID_LOG_INFO, "MLBS_HOOK", "Hooked OnChangeHeroConfirm");
-    } else {
-        __android_log_print(ANDROID_LOG_WARN, "MLBS_HOOK", "Failed to find OnChangeHeroConfirm address.");
-    }
-
-    // Hook untuk event draft ban
-    void* onChangeHeroBanAddr = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "BattleReceiveMessage", "OnChangeHeroBan", 2);
-    if (onChangeHeroBanAddr) {
-        DobbyHook(onChangeHeroBanAddr, (void*)myOnChangeHeroBan, (void**)&origOnChangeHeroBan);
-        __android_log_print(ANDROID_LOG_INFO, "MLBS_HOOK", "Hooked OnChangeHeroBan");
-    } else {
-        __android_log_print(ANDROID_LOG_WARN, "MLBS_HOOK", "Failed to find OnChangeHeroBan address.");
-    }
     
     // Add a delay to prevent race condition on startup
     sleep(3);
 
     LoadConfig(g_State);
-    StartWebServer();
+    if (g_State.webServerEnabled) {
+        StartWebServer();
+    } else {
+        __android_log_print(ANDROID_LOG_INFO, "MLBS_HOOK", "Web server is disabled in config. Not starting.");
+    }
     
 	return nullptr;
 }

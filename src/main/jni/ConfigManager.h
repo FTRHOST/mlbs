@@ -3,4 +3,4 @@
 #include "GlobalState.h"
 
 void LoadConfig(GlobalState& state);
-void SaveConfig(const GlobalState& state);
+void SaveConfig(GlobalState& state);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../Include.h"
 
 #pragma once
 
@@ -155,8 +156,8 @@ int GetBattleState(void* instance) {
 #define SystemData_m_uiID (uintptr_t) Il2CppGetStaticFieldOffset("Assembly-CSharp.dll","","SystemData", OBFUSCATE("m_uiID"))
 
 
-MonoList<uintptr_t> *GetBattlePlayerInfo() {
-    return reinterpret_cast<MonoList<uintptr_t> *(*)(void *)>(SystemData_GetBattlePlayerInfo)(nullptr);
+monoList<uintptr_t> *GetBattlePlayerInfo() {
+    return reinterpret_cast<monoList<uintptr_t> *(*)(void *)>(SystemData_GetBattlePlayerInfo)(nullptr);
 }
 
 void StopMD5Check(){
@@ -236,4 +237,3 @@ void StopMD5Check(){
 #define UIRankHero_BRankHeroCanUse (uintptr_t) Il2CppGetMethodOffset(OBFUSCATE("Assembly-CSharp.dll"), OBFUSCATE(""), OBFUSCATE("UIRankHero"), OBFUSCATE("BRankHeroCanUse"), 1)
 #define StarMemberData_ContainSkin (uintptr_t) Il2CppGetMethodOffset(OBFUSCATE("Assembly-CSharp.dll"), OBFUSCATE(""), OBFUSCATE("StarMemberData"), OBFUSCATE("ContainSkin"), 1)
 #define UIChooseHero_CheckHeroDefaultSkin (uintptr_t) Il2CppGetMethodOffset(OBFUSCATE("Assembly-CSharp.dll"), OBFUSCATE(""), OBFUSCATE("UIChooseHero"), OBFUSCATE("CheckHeroDefaultSkin"),1)
-
