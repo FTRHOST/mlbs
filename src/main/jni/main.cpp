@@ -47,6 +47,7 @@
 #include "WebServer.h"
 #include "GlobalState.h"
 #include "ConfigManager.h"
+#include "GMMode.h"
 #include "include/nlohmann/json.hpp" // For JSON serialization
 
 // Instance state global
@@ -204,6 +205,43 @@ void UpdatePlayerInfo() {
     }
 }
 
+// Function pointer for UnityEngine.GameObject::SetActive(bool)
+void (*GameObject_SetActive)(void* instance, bool value);
+
+// Original function pointer for UI_CustomBattleInfoUI::InitView()
+void (*orig_UI_CustomBattleInfoUI_InitView)(void* instance);
+
+// Replacement function for UI_CustomBattleInfoUI::InitView()
+void my_UI_CustomBattleInfoUI_InitView(void* instance) {
+    // Call the original function first
+    if (orig_UI_CustomBattleInfoUI_InitView) {
+        orig_UI_CustomBattleInfoUI_InitView(instance);
+    }
+
+    if (g_State.tournamentModeEnabled) {
+        // Resolve GameObject::SetActive once and store it
+        static void (*GameObject_SetActive)(void*, bool) = nullptr;
+        if (!GameObject_SetActive) {
+            GameObject_SetActive = (void (*)(void*, bool)) Il2CppGetMethodOffset("UnityEngine.CoreModule.dll", "UnityEngine", "GameObject", "SetActive", 1);
+            if (!GameObject_SetActive) {
+                 __android_log_print(ANDROID_LOG_WARN, "MLBS_HOOK", "Failed to find GameObject::SetActive on-demand.");
+                 return; // Can't proceed
+            }
+        }
+
+        // Access m_button_JsonInfo field (Offset 0x60)
+        void* btnTournament = *(void**)((uintptr_t)instance + 0x60); 
+
+        // Activate the button
+        if (btnTournament != nullptr) {
+            GameObject_SetActive(btnTournament, true);
+            __android_log_print(ANDROID_LOG_INFO, "MLBS_HOOK", "Tournament button (JsonInfo) activated!");
+        } else {
+            __android_log_print(ANDROID_LOG_WARN, "MLBS_HOOK", "m_button_JsonInfo (offset 0x60) is NULL.");
+        }
+    }
+}
+
 // Hook for Ban Event
 // --- Logika Inti ---
 
@@ -245,6 +283,10 @@ void DrawModMenu() {
     // Tambahkan checkbox untuk mengontrol visibilitas menu itu sendiri
     bool showmenu_changed = ImGui::Checkbox("Tampilkan Menu", &g_State.showMenu);
 
+    bool tournament_mode_changed = ImGui::Checkbox("Aktifkan Tournament Mode", &g_State.tournamentModeEnabled);
+    ImGui::SameLine();
+    ImGui::TextColored(g_State.tournamentModeEnabled ? ImVec4(0,1,0,1) : ImVec4(1,0,0,1), g_State.tournamentModeEnabled ? "ON" : "OFF");
+
     bool roominfo_changed = ImGui::Checkbox("Aktifkan Room Info", &g_State.roomInfoEnabled);
     ImGui::SameLine();
     ImGui::TextColored(g_State.roomInfoEnabled ? ImVec4(0,1,0,1) : ImVec4(1,0,0,1), g_State.roomInfoEnabled ? "ON" : "OFF");
@@ -253,7 +295,11 @@ void DrawModMenu() {
     ImGui::SameLine();
     ImGui::TextColored(g_State.webServerEnabled ? ImVec4(0,1,0,1) : ImVec4(1,0,0,1), g_State.webServerEnabled ? "ON" : "OFF");
 
-    if (showmenu_changed || roominfo_changed || webserver_changed) {
+    bool gmmode_changed = ImGui::Checkbox("Aktifkan GM Mode", &g_State.gmModeEnabled);
+    ImGui::SameLine();
+    ImGui::TextColored(g_State.gmModeEnabled ? ImVec4(0,1,0,1) : ImVec4(1,0,0,1), g_State.gmModeEnabled ? "ON" : "OFF");
+
+    if (showmenu_changed || tournament_mode_changed || roominfo_changed || webserver_changed || gmmode_changed) {
         if (webserver_changed) {
             if (g_State.webServerEnabled) {
                 StartWebServer();
@@ -490,6 +536,17 @@ void *hack_thread(void*) {
     get_transform = (void *(*)(void*)) getAbsoluteAddress("libil2cpp.so", 0x0);
     DobbyHook((void *)getAbsoluteAddress("libil2cpp.so", 0x0), (void *) &Player_update, (void **) &old_Player_update);
 
+    // Apply GM Mode Hooks
+    ApplyGMModeHooks();
+
+    // Hook UI_CustomBattleInfoUI::InitView
+    void* customBattleInfoUIInitViewAddr = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "UI_CustomBattleInfoUI", "InitView", 0);
+    if (customBattleInfoUIInitViewAddr) {
+        DobbyHook(customBattleInfoUIInitViewAddr, (void*)my_UI_CustomBattleInfoUI_InitView, (void**)&orig_UI_CustomBattleInfoUI_InitView);
+        __android_log_print(ANDROID_LOG_INFO, "MLBS_HOOK", "Hooked UI_CustomBattleInfoUI::InitView");
+    } else {
+        __android_log_print(ANDROID_LOG_WARN, "MLBS_HOOK", "Failed to find UI_CustomBattleInfoUI::InitView address.");
+    }
     
     // Add a delay to prevent race condition on startup
     sleep(3);

@@ -38,6 +38,12 @@ void LoadConfig(GlobalState& state) {
         if (j.contains("showMenu") && j["showMenu"].is_boolean()) {
             state.showMenu = j["showMenu"];
         }
+        if (j.contains("tournamentModeEnabled") && j["tournamentModeEnabled"].is_boolean()) {
+            state.tournamentModeEnabled = j["tournamentModeEnabled"];
+        }
+        if (j.contains("gmModeEnabled") && j["gmModeEnabled"].is_boolean()) {
+            state.gmModeEnabled = j["gmModeEnabled"];
+        }
         __android_log_print(ANDROID_LOG_INFO, "MLBS_CONFIG", "Successfully loaded config from %s", configPath.c_str());
     } catch (const nlohmann::json::parse_error& e) {
         __android_log_print(ANDROID_LOG_ERROR, "MLBS_CONFIG", "Failed to parse config file: %s", e.what());
@@ -68,6 +74,8 @@ static void _SaveConfig_Internal(GlobalState& state) {
     j["roomInfoEnabled"] = state.roomInfoEnabled;
     j["webServerEnabled"] = state.webServerEnabled;
     j["showMenu"] = state.showMenu;
+    j["tournamentModeEnabled"] = state.tournamentModeEnabled;
+    j["gmModeEnabled"] = state.gmModeEnabled;
 
     std::ofstream configFile(configPath);
     if (!configFile.is_open()) {

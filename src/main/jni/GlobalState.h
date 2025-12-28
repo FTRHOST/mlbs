@@ -25,6 +25,8 @@ struct GlobalState {
     bool roomInfoEnabled = true;
     bool webServerEnabled = true;
     bool showMenu = true;
+    bool tournamentModeEnabled = false;
+    bool gmModeEnabled = false;
     std::vector<PlayerData> players;
 };
 
