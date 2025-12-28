@@ -236,7 +236,7 @@ void DrawModMenu() {
 
     ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
     // Berikan state global ke ImGui::Begin, tombol 'X' akan memodifikasinya
-    ImGui::Begin("MLBS Controller PRO v4.1 (Diagnostic)", &g_State.showMenu);
+    ImGui::Begin("MLBS v0.2 (Diagnostic)", &g_State.showMenu);
 
     // --- Bagian Main ---
     ImGui::Text("Pengaturan Fitur Utama");
