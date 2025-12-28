@@ -47,11 +47,17 @@
 #include "WebServer.h"
 #include "GlobalState.h"
 #include "ConfigManager.h"
+#include "feature/BattleData.h"
 #include "include/nlohmann/json.hpp" // For JSON serialization
 
 // Instance state global
 GlobalState g_State;
 bool g_IsWebServerReady = false;
+
+// Software-based battle timer variables
+std::chrono::steady_clock::time_point g_battleStartTime;
+std::chrono::duration<float> g_elapsedBattleTime(0);
+std::atomic<bool> g_isBattleTimerRunning(false);
 
 EGLBoolean (*old_eglSwapBuffers)(EGLDisplay dpy, EGLSurface surface);
 
@@ -153,13 +159,11 @@ void UpdatePlayerInfo() {
     if (!battlePlayerList) {
         std::lock_guard<std::mutex> lock(g_State.stateMutex);
         if (!g_State.players.empty()) g_State.players.clear();
-        if (!g_State.draftEvents.empty()) g_State.draftEvents.clear();
         return;
     }
     
     std::lock_guard<std::mutex> lock(g_State.stateMutex);
     g_State.players.clear();
-    g_State.draftEvents.clear();
     std::unordered_set<uint32_t> uniqueBans;
 
     for (int i = 0; i < battlePlayerList->getSize(); i++) {
@@ -277,22 +281,52 @@ void UpdatePlayerInfo() {
         p.rankLevel = p.uiRankLevel;
 
         g_State.players.push_back(p);
-
-        // Handle ban event
-        if (p.banHero != 0 && uniqueBans.find(p.banHero) == uniqueBans.end()) {
-            DraftEvent ev;
-            ev.heroName = HeroToString(p.banHero);
-            ev.eventType = "BAN";
-            ev.playerName = (p.iCamp == 1) ? "Team Blue" : "Team Red";
-            g_State.draftEvents.push_back(ev);
-            uniqueBans.insert(p.banHero);
-        }
     }
 }
 
+// New function to read battle stats
+BattleStats GetBattleStats() {
+    BattleStats stats = {}; // Initialize with zeros
+    void* showFightDataInstance = nullptr;
+
+    // Get the singleton instance of ShowFightData
+    Il2CppGetStaticFieldValue("Assembly-CSharp.dll", "", "ShowFightData", "Instance", &showFightDataInstance);
+
+    if (showFightDataInstance) {
+        // Cast the instance to our layout struct
+        auto* pData = static_cast<ShowFightDataTiny_Layout*>(showFightDataInstance);
+        
+        // Copy the data into our clean struct
+        stats.iCampAKill = pData->m_iCampAKill;
+        stats.iCampBKill = pData->m_iCampBKill;
+        stats.CampAGold = pData->m_CampAGold;
+        stats.CampBGold = pData->m_CampBGold;
+        stats.CampAExp = pData->m_CampAExp;
+        stats.CampBExp = pData->m_CampBExp;
+        stats.CampAKillTower = pData->m_CampAKillTower;
+        stats.CampBKillTower = pData->m_CampBKillTower;
+        stats.CampAKillLingZhu = pData->m_CampAKillLingZhu;
+        stats.CampBKillLingZhu = pData->m_CampBKillLingZhu;
+        stats.CampAKillShenGui = pData->m_CampAKillShenGui;
+        stats.CampBKillShenGui = pData->m_CampBKillShenGui;
+    }
+
+    return stats;
+    }
+
+float GetBattleTime() {
+    if (g_isBattleTimerRunning) {
+        // If the timer is running, calculate current elapsed time
+        return std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now() - g_battleStartTime).count();
+    } else {
+        // If the timer is stopped, return the final recorded duration
+        return g_elapsedBattleTime.count();
+    }
+}
 
 // --- Logika Inti ---
 
+// --- Logika Inti ---
 void MonitorBattleState() {
     void *logicBattleManager = nullptr;
     Il2CppGetStaticFieldValue("Assembly-CSharp.dll", "", "LogicBattleManager", "Instance", &logicBattleManager);
@@ -301,10 +335,26 @@ void MonitorBattleState() {
     int currentBattleState = GetBattleState(logicBattleManager);
 
     if (currentBattleState != g_State.battleState) {
+        // --- BATTLE TIMER LOGIC ---
+        // If the battle is starting (state 6) and the timer is not already running
+        if (currentBattleState == 6 && !g_isBattleTimerRunning) {
+            g_isBattleTimerRunning = true;
+            g_battleStartTime = std::chrono::steady_clock::now();
+            g_elapsedBattleTime = std::chrono::duration<float>(0);
+            __android_log_print(ANDROID_LOG_INFO, "MLBS_TIMER", "Battle timer started.");
+        } 
+        // If the battle has just ended (state 7) and the timer was running
+        else if (currentBattleState == 7 && g_isBattleTimerRunning) {
+            g_isBattleTimerRunning = false;
+            g_elapsedBattleTime = std::chrono::steady_clock::now() - g_battleStartTime;
+            __android_log_print(ANDROID_LOG_INFO, "MLBS_TIMER", "Battle timer stopped. Final time: %f", g_elapsedBattleTime.count());
+        }
+        // --- END BATTLE TIMER LOGIC ---
+
         std::lock_guard<std::mutex> lock(g_State.stateMutex);
         g_State.battleState = currentBattleState;
         if(currentBattleState != 2) {
-            
+            // draftEvents was removed, this is no longer needed.
         }
     }
     
@@ -398,45 +448,6 @@ void DrawModMenu() {
         }
     }
 
-    ImGui::Dummy(ImVec2(0.0f, 20.0f)); // Spasi
-
-    // --- Bagian Banned Heroes ---
-    ImGui::Text("Banned Heroes");
-    ImGui::Separator();
-    if (!g_State.roomInfoEnabled) {
-        ImGui::Text("Fitur 'Room Info' sedang dinonaktifkan. Aktifkan di atas untuk melihat banned heroes.");
-    } else {
-        std::lock_guard<std::mutex> lock(g_State.stateMutex);
-        if (g_State.draftEvents.empty()) {
-            ImGui::Text("Tidak ada hero yang di-ban terdeteksi.");
-        } else {
-            if (ImGui::BeginTable("BannedHeroesTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY)) {
-                ImGui::TableSetupColumn("Camp");
-                ImGui::TableSetupColumn("Hero");
-                ImGui::TableSetupColumn("Event Type");
-                ImGui::TableHeadersRow();
-
-                for (const auto& ev : g_State.draftEvents) {
-                    ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(0);
-                    ImVec4 camp_color = ImVec4(1, 1, 1, 1); // Default color
-                    if (ev.playerName.find("Blue") != std::string::npos) {
-                        camp_color = ImVec4(0.2, 0.5, 1, 1);
-                    } else if (ev.playerName.find("Red") != std::string::npos) {
-                        camp_color = ImVec4(1, 0.3, 0.3, 1);
-                    }
-                    ImGui::TextColored(camp_color, "%s", ev.playerName.c_str());
-                    
-                    ImGui::TableSetColumnIndex(1);
-                    ImGui::Text("%s", ev.heroName.c_str());
-
-                    ImGui::TableSetColumnIndex(2);
-                    ImGui::Text("%s", ev.eventType.c_str());
-                }
-                ImGui::EndTable();
-            }
-        }
-    }
     ImGui::Dummy(ImVec2(0.0f, 20.0f)); // Spasi
 
     // --- Bagian Server Info ---

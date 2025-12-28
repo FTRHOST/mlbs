@@ -8,6 +8,7 @@
 #include "include/nlohmann/json.hpp"
 #include "PanelHTML.h" 
 #include "ConfigManager.h"
+#include "feature/BattleData.h"
 
 // Global server instance and thread
 std::unique_ptr<httplib::Server> svr;
@@ -50,14 +51,6 @@ std::string StateToJson() {
             {"heroId", p.heroId},
             {"spellId", p.spellId},
             {"rankLevel", p.rankLevel}
-        });
-    }
-
-    for (const auto& ev : g_State.draftEvents) {
-        j["draftEvents"].push_back({
-            {"player", ev.playerName},
-            {"hero", ev.heroName},
-            {"event", ev.eventType}
         });
     }
     
@@ -183,6 +176,54 @@ std::string RoomDataToJson() {
     return j.dump(4);
 }
 
+// Fungsi baru untuk serialisasi data battle dan info room
+std::string BattleDataToJson() {
+    __android_log_print(ANDROID_LOG_INFO, "MLBS_WEB_SERVER", "BattleDataToJson: Starting serialization.");
+    
+    // 1. Dapatkan statistik pertempuran real-time
+    BattleStats stats = GetBattleStats();
+
+    // 2. Buat objek JSON utama
+    nlohmann::json j;
+
+    // 3. Isi sub-objek battle_stats
+    j["battle_stats"]["camp_a_kills"] = stats.iCampAKill;
+    j["battle_stats"]["camp_b_kills"] = stats.iCampBKill;
+    j["battle_stats"]["camp_a_gold"] = stats.CampAGold;
+    j["battle_stats"]["camp_b_gold"] = stats.CampBGold;
+    j["battle_stats"]["camp_a_exp"] = stats.CampAExp;
+    j["battle_stats"]["camp_b_exp"] = stats.CampBExp;
+    j["battle_stats"]["camp_a_tower_kills"] = stats.CampAKillTower;
+    j["battle_stats"]["camp_b_tower_kills"] = stats.CampBKillTower;
+    j["battle_stats"]["camp_a_lord_kills"] = stats.CampAKillLingZhu;
+    j["battle_stats"]["camp_b_lord_kills"] = stats.CampBKillLingZhu;
+    j["battle_stats"]["camp_a_turtle_kills"] = stats.CampAKillShenGui;
+    j["battle_stats"]["camp_b_turtle_kills"] = stats.CampBKillShenGui;
+
+    // 4. Kunci mutex dan isi array pemain
+    {
+        std::lock_guard<std::mutex> lock(g_State.stateMutex);
+        j["players"] = nlohmann::json::array();
+        for (const auto& p : g_State.players) {
+            j["players"].push_back({
+                {"name", p.name},
+                {"uid", p.uid},
+                {"rank", p.rank},
+                {"spell", p.spell},
+                {"hero", p.heroName},
+                {"camp", p.camp},
+                {"heroId", p.heroId},
+                {"spellId", p.spellId},
+                {"rankLevel", p.rankLevel}
+            });
+        }
+    }
+    
+    // 5. Kembalikan string JSON
+    __android_log_print(ANDROID_LOG_INFO, "MLBS_WEB_SERVER", "BattleDataToJson: Serialization complete.");
+    return j.dump(4);
+}
+
 
 // Fungsi untuk menjalankan server di thread terpisah
 void RunServerLoop() {
@@ -200,6 +241,24 @@ void RunServerLoop() {
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(RoomDataToJson(), "application/json");
         __android_log_print(ANDROID_LOG_INFO, "MLBS_WEB_SERVER", "/inforoom request handled");
+    });
+
+    // Endpoint baru untuk mendapatkan data battle real-time
+    svr->Get("/infobattle", [](const httplib::Request &, httplib::Response &res) {
+        __android_log_print(ANDROID_LOG_INFO, "MLBS_WEB_SERVER", "Received /infobattle request");
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_content(BattleDataToJson(), "application/json");
+        __android_log_print(ANDROID_LOG_INFO, "MLBS_WEB_SERVER", "/infobattle request handled");
+    });
+
+    // Endpoint baru untuk mendapatkan waktu pertandingan
+    svr->Get("/timebattle", [](const httplib::Request &, httplib::Response &res) {
+        __android_log_print(ANDROID_LOG_INFO, "MLBS_WEB_SERVER", "Received /timebattle request");
+        res.set_header("Access-Control-Allow-Origin", "*");
+        nlohmann::json j;
+        j["battle_time"] = GetBattleTime();
+        res.set_content(j.dump(), "application/json");
+        __android_log_print(ANDROID_LOG_INFO, "MLBS_WEB_SERVER", "/timebattle request handled");
     });
 
     // Endpoint untuk mengkonfigurasi mod

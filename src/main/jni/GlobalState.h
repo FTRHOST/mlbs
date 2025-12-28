@@ -119,13 +119,6 @@ struct PlayerData {
     int rankLevel;
 };
 
-// Info untuk satu event draft
-struct DraftEvent {
-    std::string playerName;
-    std::string heroName;
-    std::string eventType; // "PICK" or "BAN"
-};
-
 // State global aplikasi
 struct GlobalState {
     std::mutex stateMutex;
@@ -134,7 +127,6 @@ struct GlobalState {
     bool webServerEnabled = true;
     bool showMenu = true;
     std::vector<PlayerData> players;
-    std::vector<DraftEvent> draftEvents;
 };
 
 // Deklarasi instance global
@@ -143,3 +135,6 @@ extern bool g_IsWebServerReady;
 
 // Fungsi untuk mengonversi state ke JSON
 std::string StateToJson();
+
+// Fungsi untuk mendapatkan waktu pertandingan
+float GetBattleTime();

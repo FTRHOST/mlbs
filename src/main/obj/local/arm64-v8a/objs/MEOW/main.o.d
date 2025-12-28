@@ -26,7 +26,8 @@
   src/main//jni/feature/../Include.h src/main//jni/feature/ToString.h \
   src/main//jni/feature/ToString2.h src/main//jni/Bypass.h \
   src/main//jni/GlobalState.h src/main//jni/WebServer.h \
-  src/main//jni/ConfigManager.h src/main//jni/include/nlohmann/json.hpp \
+  src/main//jni/ConfigManager.h src/main//jni/feature/BattleData.h \
+  src/main//jni/include/nlohmann/json.hpp \
   src/main//jni/include/nlohmann/adl_serializer.hpp \
   src/main//jni/include/nlohmann/detail/abi_macros.hpp \
   src/main//jni/include/nlohmann/detail/conversions/from_json.hpp \
@@ -106,6 +107,7 @@ src/main//jni/Bypass.h:
 src/main//jni/GlobalState.h:
 src/main//jni/WebServer.h:
 src/main//jni/ConfigManager.h:
+src/main//jni/feature/BattleData.h:
 src/main//jni/include/nlohmann/json.hpp:
 src/main//jni/include/nlohmann/adl_serializer.hpp:
 src/main//jni/include/nlohmann/detail/abi_macros.hpp:

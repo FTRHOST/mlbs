@@ -47,7 +47,8 @@
   src/main//jni/include/nlohmann/ordered_map.hpp \
   src/main//jni/include/nlohmann/detail/macro_unscope.hpp \
   src/main//jni/include/nlohmann/thirdparty/hedley/hedley_undef.hpp \
-  src/main//jni/PanelHTML.h src/main//jni/ConfigManager.h
+  src/main//jni/PanelHTML.h src/main//jni/ConfigManager.h \
+  src/main//jni/feature/BattleData.h
 src/main//jni/WebServer.h:
 src/main//jni/GlobalState.h:
 src/main//jni/include/httplib.h:
@@ -99,3 +100,4 @@ src/main//jni/include/nlohmann/detail/macro_unscope.hpp:
 src/main//jni/include/nlohmann/thirdparty/hedley/hedley_undef.hpp:
 src/main//jni/PanelHTML.h:
 src/main//jni/ConfigManager.h:
+src/main//jni/feature/BattleData.h:
