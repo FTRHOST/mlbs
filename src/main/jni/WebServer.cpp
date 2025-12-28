@@ -36,10 +36,8 @@ std::string StateToJson() {
     
     nlohmann::json j;
     j["battleState"] = g_State.battleState;
-    j["bypassEnabled"] = g_State.bypassEnabled;
     j["roomInfoEnabled"] = g_State.roomInfoEnabled;
     j["webServerEnabled"] = g_State.webServerEnabled;
-    j["unlockSkinEnabled"] = g_State.unlockSkinEnabled;
 
     for (const auto& p : g_State.players) {
         j["players"].push_back({
@@ -52,14 +50,6 @@ std::string StateToJson() {
             {"heroId", p.heroId},
             {"spellId", p.spellId},
             {"rankLevel", p.rankLevel}
-        });
-    }
-
-    for (const auto& ev : g_State.draftEvents) {
-        j["draftEvents"].push_back({
-            {"player", ev.playerName},
-            {"hero", ev.heroName},
-            {"event", ev.eventType}
         });
     }
     
@@ -91,20 +81,10 @@ void RunServerLoop() {
         }
 
         bool stateChanged = false;
-        if (j.contains("bypassEnabled") && j["bypassEnabled"].is_boolean()) {
-            __android_log_print(ANDROID_LOG_INFO, "MLBS_WEB_SERVER", "Received /config request for bypass");
-            std::lock_guard<std::mutex> lock(g_State.stateMutex);
-            g_State.bypassEnabled = j["bypassEnabled"].get<bool>();
-            stateChanged = true;
-        } else if (j.contains("roomInfoEnabled") && j["roomInfoEnabled"].is_boolean()) {
+        if (j.contains("roomInfoEnabled") && j["roomInfoEnabled"].is_boolean()) {
             __android_log_print(ANDROID_LOG_INFO, "MLBS_WEB_SERVER", "Received /config request for room info");
             std::lock_guard<std::mutex> lock(g_State.stateMutex);
             g_State.roomInfoEnabled = j["roomInfoEnabled"].get<bool>();
-            stateChanged = true;
-        } else if (j.contains("unlockSkinEnabled") && j["unlockSkinEnabled"].is_boolean()) {
-            __android_log_print(ANDROID_LOG_INFO, "MLBS_WEB_SERVER", "Received /config request for unlock skin");
-            std::lock_guard<std::mutex> lock(g_State.stateMutex);
-            g_State.unlockSkinEnabled = j["unlockSkinEnabled"].get<bool>();
             stateChanged = true;
         }
 
