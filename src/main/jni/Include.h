@@ -6,7 +6,7 @@
 #include "ByNameModding/fake_dlfcn.h"
 #include "ByNameModding/Il2Cpp.h"
 #include "include/Utils/MonoString.h"
-#include "Toggle.h"
+
 
 int glWidth, glHeight;
 

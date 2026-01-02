@@ -15,28 +15,7 @@ void *get_main() {
 	return reinterpret_cast<void *(__fastcall *)()>(Camera_get_main)();
 }
 
-Vector3 WorldToScreen(Vector3 position) {
-	return reinterpret_cast<Vector3(__fastcall *)(void *, Vector3)>(Camera_WorldToScreenPoint)(get_main(), position);
-}
 
-float get_fieldOfView() {
-	return reinterpret_cast<float(__fastcall *)(void *)>(Camera_get_fieldOfView)(get_main());
-}
-
-void *set_fieldOfView(float value) {
-	return reinterpret_cast<void *(__fastcall *)(void *, float)>(Camera_set_fieldOfView)(get_main(), value);
-}
-
-//Class Transform
-#define Transform_get_position (uintptr_t) Il2CppGetMethodOffset("UnityEngine.dll", "UnityEngine", "Transform", "get_position")
-
-class Transform {
-public:
-    Vector3 get_position() {
-        auto get_position = (Vector3 (*)(Transform *)) (Transform_get_position);
-        return get_position(this);
-    }
-};
 
 //Class BattleManager
 #define BattleManager_m_LocalPlayerShow (uintptr_t) Il2CppGetFieldOffset("Assembly-CSharp.dll", "", "BattleManager", "m_LocalPlayerShow")

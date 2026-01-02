@@ -1,0 +1,21 @@
+Baik, file `mlbs_kitsune_final.zip` yang baru dan lengkap dengan `META-INF` telah berhasil dibuat. Ini adalah versi yang paling kompatibel dan seharusnya menyelesaikan semua "unzip error".
+
+### Instruksi Instalasi Final (dengan META-INF):
+
+1.  **Hapus Total Modul Lama:**
+    *   Sangat penting: Buka aplikasi Magisk Kitsune, masuk ke "Modul", dan **hapus** semua versi modul ini yang pernah Anda coba instal sebelumnya.
+    *   **Reboot perangkat Anda** setelah menghapus modul lama untuk memastikan sistem benar-benar bersih.
+
+2.  **Instal Modul Final:**
+    *   Transfer file **`mlbs_kitsune_final.zip`** yang baru saja dibuat ke perangkat Android Anda.
+    *   Buka aplikasi Magisk Kitsune > Modul > "Instal dari penyimpanan".
+    *   Pilih file `mlbs_kitsune_final.zip`.
+    *   Proses instalasi sekarang seharusnya berjalan lancar tanpa "unzip error".
+    *   Setelah instalasi selesai, **reboot perangkat Anda sekali lagi.**
+
+3.  **Verifikasi Instalasi dan Fungsi:**
+    *   Setelah reboot, buka Magisk Kitsune untuk memastikan modul "MLBB Readonly Observer" terinstal dan aktif.
+    *   Pastikan Zygisk diaktifkan dan Mobile Legends tidak ada di dalam DenyList.
+    *   Jalankan game dan periksa fungsionalitasnya menggunakan `logcat` atau dengan mengakses web server (`http://<ip_ponsel_anda>:2626`) seperti yang telah kita diskusikan.
+
+Silakan coba dengan file yang baru ini.

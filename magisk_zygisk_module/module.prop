@@ -1,0 +1,6 @@
+id=mlbs_readonly_observer
+name=MLBB Readonly Observer
+version=v0.1
+versionCode=1
+author=YourName
+description=A safe, read-only observer for Mobile Legends: Bang Bang using Zygisk.
