@@ -24,9 +24,17 @@ using json = nlohmann::json;
 // Default values
 bool g_UnlockSkins = false;
 bool g_DebugMode = false;
+bool g_SeeUnreleasedSkins = false;
 
 // Path Konfigurasi
 const std::string CONFIG_PATH = "/storage/emulated/0/Android/data/com.mobile.legends/files/config.json";
+
+// --- Hooks for Methods ---
+bool (*orig_IsForbidSkin)(uint32_t, bool);
+bool My_IsForbidSkin(uint32_t skinId, bool filterLuaCheck) {
+    // Return false to allow seeing/using unreleased skins
+    return false;
+}
 
 // --- Config Reader ---
 void ReadConfig() {
@@ -39,10 +47,11 @@ void ReadConfig() {
             // Parsing JSON dengan aman
             if (j.contains("UnlockCustomSkin")) g_UnlockSkins = j["UnlockCustomSkin"].get<bool>();
             if (j.contains("DebugMode")) g_DebugMode = j["DebugMode"].get<bool>();
+            if (j.contains("SeeUnreleasedSkins")) g_SeeUnreleasedSkins = j["SeeUnreleasedSkins"].get<bool>();
 
             // LOGI jika debug aktif
             if (g_DebugMode) {
-                LOGI("Config Loaded: UnlockSkin=%d", g_UnlockSkins);
+                LOGI("Config Loaded: UnlockSkin=%d, SeeUnreleasedSkins=%d", g_UnlockSkins, g_SeeUnreleasedSkins);
             }
         } catch (json::parse_error& e) {
             LOGE("JSON Parse Error: %s", e.what());
@@ -56,6 +65,7 @@ void ReadConfig() {
         if (outFile.is_open()) {
             json j;
             j["UnlockCustomSkin"] = true;
+            j["SeeUnreleasedSkins"] = true;
             j["DebugMode"] = true; // Enable debug by default for new file
 
             outFile << j.dump(4);
@@ -63,6 +73,7 @@ void ReadConfig() {
 
             // Apply immediately
             g_UnlockSkins = true;
+            g_SeeUnreleasedSkins = true;
             g_DebugMode = true;
 
             LOGI("Default config created successfully.");
@@ -84,19 +95,29 @@ void ApplyFeatures() {
     // Variabel statis untuk menghindari pencarian string berulang
     static bool hasInitOffsets = false;
     static uintptr_t targetFieldOffset = 0;
+    static void* isForbidSkinAddr = nullptr;
+    static bool isHooked = false;
 
     if (!hasInitOffsets) {
-        // Get Static Field Offset
+        // 1. Get Static Field Offset for Guide_Battle
         targetFieldOffset = Il2CppGetStaticFieldOffset("Assembly-CSharp.dll", "", "Guide_Battle", "m_RobotGuideCanSelectSkin");
+
+        // 2. Get Method Address for SystemData.IsForbidSkin
+        isForbidSkinAddr = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsForbidSkin", 2);
+
         if (targetFieldOffset != 0 && targetFieldOffset != (uintptr_t)-1) {
              hasInitOffsets = true;
-             if (g_DebugMode) LOGI("Found Offset: Guide_Battle.m_RobotGuideCanSelectSkin = %lx", targetFieldOffset);
+             if (g_DebugMode) {
+                 LOGI("Found Offset: Guide_Battle.m_RobotGuideCanSelectSkin = %lx", targetFieldOffset);
+                 if (isForbidSkinAddr) LOGI("Found Method: SystemData.IsForbidSkin = %p", isForbidSkinAddr);
+             }
         } else {
              // Reset if failed, to try again next time (maybe il2cpp not fully ready despite check)
              targetFieldOffset = 0;
         }
     }
 
+    // Apply Field Patch
     if (hasInitOffsets && g_UnlockSkins) {
         bool currentValue = false;
         // Use Tools::ReadAddr as per "Safe Logic" suggestion
@@ -108,6 +129,13 @@ void ApplyFeatures() {
                 }
             }
         }
+    }
+
+    // Apply Method Hook for IsForbidSkin
+    if (g_SeeUnreleasedSkins && isForbidSkinAddr && !isHooked) {
+        Tools::Hook(isForbidSkinAddr, (void*)My_IsForbidSkin, (void**)&orig_IsForbidSkin);
+        isHooked = true;
+        if (g_DebugMode) LOGI("Hooked SystemData.IsForbidSkin");
     }
 }
 

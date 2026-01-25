@@ -1,4 +1,5 @@
 {
   "UnlockCustomSkin": true,
-  "DebugMode": true
+  "DebugMode": true,
+  "SeeUnreleasedSkins": true
 }
