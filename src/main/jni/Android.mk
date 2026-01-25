@@ -39,7 +39,7 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/include/xdl
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/include/Hook/Dobby
 
 # Libraries
-LOCAL_LDLIBS := -llog -lEGL -lGLESv2 -landroid
+LOCAL_LDLIBS := -llog -lEGL -lGLESv3 -landroid
 LOCAL_STATIC_LIBRARIES := dobby
 
 include $(BUILD_SHARED_LIBRARY)
