@@ -1,0 +1,41 @@
+name: Build Android Mod Library
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch: # Agar bisa dijalankan manual tombol 'Run'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r25c # Versi NDK yang stabil dan umum
+
+      - name: Build with NDK-Build
+        run: |
+          # Masuk ke folder jni jika struktur folder Anda src/main/jni
+          cd src/main/jni
+
+          # Jalankan ndk-build
+          # NDK_PROJECT_PATH=. memberitahu bahwa folder ini adalah root project
+          # APP_BUILD_SCRIPT=Android.mk menunjuk file makefile
+          # NDK_APPLICATION_MK=Application.mk menunjuk config aplikasi
+          ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=Android.mk NDK_APPLICATION_MK=Application.mk
+
+      - name: List Output Files (Debugging)
+        run: find src/main/jni/libs -name "*.so"
+
+      - name: Upload Artifacts (.so files)
+        uses: actions/upload-artifact@v4
+        with:
+          name: libMyCleanMod-so
+          path: src/main/jni/libs/**/*.so

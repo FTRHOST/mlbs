@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Utils.h"
 #include "jniStuff.h"
 #include "ByNameModding/Tools.h"
