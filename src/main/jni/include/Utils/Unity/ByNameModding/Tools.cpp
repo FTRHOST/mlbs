@@ -159,7 +159,11 @@ uintptr_t Tools::FindPattern(const char *lib, const char *pattern) {
             if (!firstMatch) {
                 firstMatch = pCur;
             }
-            curPat += (*(uint16_t *) curPat == (uint16_t) '\?\?' || *(uint8_t *) curPat != (uint8_t) '\?') ? 2 : 1;
+            if (*(uint16_t*)curPat == 0x3F3F /* '??' */ || *(uint8_t*)curPat != (uint8_t)'?') {
+                curPat += 2;
+            } else {
+                curPat += 1;
+            }
             if (!*curPat) {
                 return firstMatch;
             }

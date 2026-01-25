@@ -14,6 +14,17 @@
 #include "include/Utils/Unity/ByNameModding/Il2Cpp.h"
 #include "include/Utils/Unity/ByNameModding/Tools.h"
 
+// Undefine macros from Includes.h to avoid warnings
+#ifdef LOG_TAG
+#undef LOG_TAG
+#endif
+#ifdef LOGI
+#undef LOGI
+#endif
+#ifdef LOGE
+#undef LOGE
+#endif
+
 #define LOG_TAG "StealthMod"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
@@ -108,7 +119,7 @@ void ApplyFeatures() {
         if (targetFieldOffset != 0 && targetFieldOffset != (uintptr_t)-1) {
              hasInitOffsets = true;
              if (g_DebugMode) {
-                 LOGI("Found Offset: Guide_Battle.m_RobotGuideCanSelectSkin = %lx", targetFieldOffset);
+                 LOGI("Found Offset: Guide_Battle.m_RobotGuideCanSelectSkin = %lx", (unsigned long)targetFieldOffset);
                  if (isForbidSkinAddr) LOGI("Found Method: SystemData.IsForbidSkin = %p", isForbidSkinAddr);
              }
         } else {
