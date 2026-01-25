@@ -74,6 +74,14 @@ EGLBoolean MyEglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
         LOGI("ImGui Initialized");
     }
 
+    ImGuiIO& io = ImGui::GetIO();
+
+    // Update Display Size
+    EGLint width, height;
+    eglQuerySurface(dpy, surface, EGL_WIDTH, &width);
+    eglQuerySurface(dpy, surface, EGL_HEIGHT, &height);
+    io.DisplaySize = ImVec2((float)width, (float)height);
+
     ImGui_ImplOpenGL3_NewFrame();
     ImGui::NewFrame();
 
