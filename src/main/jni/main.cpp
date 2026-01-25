@@ -49,9 +49,25 @@ void ReadConfig() {
         }
         configFile.close();
     } else {
-        // Jika file tidak ada, tidak melakukan apa-apa (Stealth)
-        if (g_DebugMode) {
-            LOGE("Config file not found at: %s", CONFIG_PATH.c_str());
+        // Jika file tidak ada, buat file default (Agar user tidak bingung)
+        LOGE("Config file not found. Creating default at: %s", CONFIG_PATH.c_str());
+
+        std::ofstream outFile(CONFIG_PATH);
+        if (outFile.is_open()) {
+            json j;
+            j["UnlockCustomSkin"] = true;
+            j["DebugMode"] = true; // Enable debug by default for new file
+
+            outFile << j.dump(4);
+            outFile.close();
+
+            // Apply immediately
+            g_UnlockSkins = true;
+            g_DebugMode = true;
+
+            LOGI("Default config created successfully.");
+        } else {
+            LOGE("Failed to create config file. Check permissions.");
         }
     }
 }
