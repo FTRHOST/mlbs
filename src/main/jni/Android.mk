@@ -1,53 +1,45 @@
 LOCAL_PATH := $(call my-dir)
 
+# --- Library Dobby Prebuilt ---
 include $(CLEAR_VARS)
 LOCAL_MODULE := dobby
 LOCAL_SRC_FILES := lib/$(TARGET_ARCH_ABI)/libdobby.a
 include $(PREBUILT_STATIC_LIBRARY)
 
+# --- Main Module ---
 include $(CLEAR_VARS)
-LOCAL_MODULE := MEOW
+LOCAL_MODULE := MyCleanMod
+# ^ Ganti nama lib sesuai keinginan, nanti outputnya libMyCleanMod.so
 
-LOCAL_CFLAGS := -w -s -Wno-error=format-security -fvisibility=hidden -fpermissive -fexceptions
-LOCAL_CPPFLAGS := -w -s -Wno-error=format-security -fvisibility=hidden -Werror -std=c++11 -std=c++17
-LOCAL_CPPFLAGS += -Wno-error=c++11-narrowing -fpermissive -Wall -fexceptions -pthread
-LOCAL_LDFLAGS += -Wl,--gc-sections,--strip-all, -llog
-LOCAL_LDLIBS := -llog -landroid -lEGL -lGLESv3
-LOCAL_ARM_MODE := arm
+# Flag Build
+LOCAL_CFLAGS += -Wall -Wno-unused-variable -Wno-unused-function -fvisibility=hidden
+LOCAL_CPPFLAGS += -fexceptions -frtti -std=c++17
 
+# Sertakan File Source (Hanya yang penting!)
+# Hapus WebServer.cpp, ConfigManager.cpp, Unlock.cpp, dll.
+LOCAL_SRC_FILES := main.cpp \
+                   src/ImGui/imgui.cpp \
+                   src/ImGui/imgui_demo.cpp \
+                   src/ImGui/imgui_draw.cpp \
+                   src/ImGui/imgui_tables.cpp \
+                   src/ImGui/imgui_widgets.cpp \
+                   src/ImGui/backends/imgui_impl_android.cpp \
+                   src/ImGui/backends/imgui_impl_opengl3.cpp \
+                   src/xdl/xdl.c \
+                   src/xdl/xdl_iterate.c \
+                   src/xdl/xdl_linker.c \
+                   src/xdl/xdl_lzma.c \
+                   src/xdl/xdl_util.c
+
+# Include Directories
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/include
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/include/xdl
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/include/ImGui
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/include/ImGui/backends
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/include/ImGui/font
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/include/xdl
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/include/Hook/Dobby
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/include/Hook/KittyMemory
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/include/Utils
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/include/Utils/Unity
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/include/Utils/Unity/ByNameModding
 
-
-FILE_LIST := $(wildcard $(LOCAL_PATH)/*.cpp*)
-FILE_LIST += $(wildcard $(LOCAL_PATH)/src/*.cpp*)
-FILE_LIST += $(wildcard $(LOCAL_PATH)/src/xdl/*.c*)
-FILE_LIST += $(wildcard $(LOCAL_PATH)/src/ImGui/*.cpp*)
-FILE_LIST += $(wildcard $(LOCAL_PATH)/src/ImGui/backends/*.cpp*)
-FILE_LIST += $(wildcard $(LOCAL_PATH)/src/Hook/KittyMemory/*.cpp*)
-FILE_LIST += $(wildcard $(LOCAL_PATH)/src/Utils/*.cpp*)
-
-FILE_LIST += $(LOCAL_PATH)/include/Hook/KittyMemory/SubstrateDebug.cpp
-FILE_LIST += $(LOCAL_PATH)/include/Hook/KittyMemory/SubstrateHook.cpp
-FILE_LIST += $(LOCAL_PATH)/include/Hook/KittyMemory/SymbolFinder.cpp
-
-FILE_LIST += $(LOCAL_PATH)/include/Utils/Unity/ByNameModding/fake_dlfcn.cpp
-FILE_LIST += $(LOCAL_PATH)/include/Utils/Unity/ByNameModding/Il2Cpp.cpp
-FILE_LIST += $(LOCAL_PATH)/include/Utils/Unity/ByNameModding/Tools.cpp
-FILE_LIST += $(LOCAL_PATH)/Il2Cpp/il2cpp_dump.cpp
-
-
-
-LOCAL_SRC_FILES := $(FILE_LIST:$(LOCAL_PATH)/%=%)
-
+# Libraries
+LOCAL_LDLIBS := -llog -lEGL -lGLESv2 -landroid
 LOCAL_STATIC_LIBRARIES := dobby
 
 include $(BUILD_SHARED_LIBRARY)
