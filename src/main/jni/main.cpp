@@ -54,13 +54,13 @@ bool My_IsCanUseSkin(int32_t heroid) {
     return true; // Always allow using skin
 }
 
-int32_t (*orig_GetLoginZoneId)();
-int32_t My_GetLoginZoneId() {
-    if (g_SpoofZoneId) {
-        return g_CustomZoneId;
-    }
-    return orig_GetLoginZoneId();
-}
+// int32_t (*orig_GetLoginZoneId)();
+// int32_t My_GetLoginZoneId() {
+//     if (g_SpoofZoneId) {
+//         return g_CustomZoneId;
+//     }
+//     return orig_GetLoginZoneId();
+// }
 
 // --- Config Reader ---
 void ReadConfig() {
@@ -130,7 +130,7 @@ void ApplyFeatures() {
     static uintptr_t targetFieldOffset = 0;
     static void* isForbidSkinAddr = nullptr;
     static void* isCanUseSkinAddr = nullptr;
-    static void* getLoginZoneIdAddr = nullptr;
+    // static void* getLoginZoneIdAddr = nullptr;
     static bool isHooked = false;
 
     if (!hasInitOffsets) {
@@ -140,7 +140,7 @@ void ApplyFeatures() {
         // 2. Get Method Addresses
         isForbidSkinAddr = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsForbidSkin", 2);
         isCanUseSkinAddr = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsCanUseSkin", 1);
-        getLoginZoneIdAddr = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "LoginCLibraryUtils", "GetLoginZoneId", 0);
+        // getLoginZoneIdAddr = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "LoginCLibraryUtils", "GetLoginZoneId", 0);
 
         if (targetFieldOffset != 0 && targetFieldOffset != (uintptr_t)-1) {
              hasInitOffsets = true;
@@ -148,7 +148,7 @@ void ApplyFeatures() {
                  LOGI("Found Offset: Guide_Battle.m_RobotGuideCanSelectSkin = %lx", (unsigned long)targetFieldOffset);
                  if (isForbidSkinAddr) LOGI("Found Method: SystemData.IsForbidSkin = %p", isForbidSkinAddr);
                  if (isCanUseSkinAddr) LOGI("Found Method: SystemData.IsCanUseSkin = %p", isCanUseSkinAddr);
-                 if (getLoginZoneIdAddr) LOGI("Found Method: LoginCLibraryUtils.GetLoginZoneId = %p", getLoginZoneIdAddr);
+                 // if (getLoginZoneIdAddr) LOGI("Found Method: LoginCLibraryUtils.GetLoginZoneId = %p", getLoginZoneIdAddr);
              }
         } else {
              // Reset if failed, to try again next time (maybe il2cpp not fully ready despite check)
@@ -183,10 +183,10 @@ void ApplyFeatures() {
         }
 
         // Always hook GetLoginZoneId to handle dynamic toggling via global var
-        if (getLoginZoneIdAddr) {
-            Tools::Hook(getLoginZoneIdAddr, (void*)My_GetLoginZoneId, (void**)&orig_GetLoginZoneId);
-             if (g_DebugMode) LOGI("Hooked LoginCLibraryUtils.GetLoginZoneId");
-        }
+        // if (getLoginZoneIdAddr) {
+        //     Tools::Hook(getLoginZoneIdAddr, (void*)My_GetLoginZoneId, (void**)&orig_GetLoginZoneId);
+        //      if (g_DebugMode) LOGI("Hooked LoginCLibraryUtils.GetLoginZoneId");
+        // }
 
         isHooked = true;
     }
