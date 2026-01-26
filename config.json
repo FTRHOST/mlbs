@@ -1,5 +1,7 @@
 {
   "UnlockCustomSkin": true,
   "DebugMode": true,
-  "SeeUnreleasedSkins": true
+  "SeeUnreleasedSkins": true,
+  "SpoofZoneId": false,
+  "CustomZoneId": 50001
 }
