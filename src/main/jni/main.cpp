@@ -1,135 +1,209 @@
 #include <jni.h>
 #include <pthread.h>
 #include <unistd.h>
-#include <EGL/egl.h>
-#include <android/log.h> // Include log header
+#include <android/log.h>
+#include <fstream>
+#include <iostream>
+#include <thread>
+#include <chrono>
 
-#include "include/Hook/Dobby/dobby.h"
-#include "include/ImGui/imgui.h"
-#include "include/ImGui/backends/imgui_impl_opengl3.h"
-#include "include/ImGui/backends/imgui_impl_android.h"
-#include "include/xdl/xdl.h"
+// Include JSON Library
+#include "include/nlohmann/json.hpp"
 
-#define LOG_TAG "CleanMod"
+// Include Modding Utils
+#include "include/Utils/Unity/ByNameModding/Il2Cpp.h"
+#include "include/Utils/Unity/ByNameModding/Tools.h"
+
+// Include Feature Modules
+#include "feature/UnlockSkin.h"
+#include "feature/GameMaster.h"
+
+// Undefine macros from Includes.h to avoid warnings
+#ifdef LOG_TAG
+#undef LOG_TAG
+#endif
+#ifdef LOGI
+#undef LOGI
+#endif
+#ifdef LOGE
+#undef LOGE
+#endif
+
+#define LOG_TAG "StealthMod"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
-// --- Global Variables ---
-bool g_ShowMenu = true;
-EGLBoolean (*orig_eglSwapBuffers)(EGLDisplay, EGLSurface);
-void (*orig_Input)(void*, void*, void*);
+using json = nlohmann::json;
 
-// --- UI Logic ---
-void DrawMenu() {
-    if (!g_ShowMenu) return;
+// --- Global Config Variables ---
+// Default values
+bool g_UnlockSkins = false;
+bool g_DebugMode = false;
+bool g_SeeUnreleasedSkins = false;
+bool g_SpoofZoneId = false;
+int g_CustomZoneId = 50001;
+bool g_EnableDebugMenu = false;
 
-    // UI Dasar Sederhana
-    ImGui::Begin("Clean Mod Menu", &g_ShowMenu);
-    ImGui::Text("Status: Safe & Clean");
-    ImGui::Separator();
-    ImGui::Text("Mod Aktif!");
-    ImGui::Text("Versi Arsitektur: %s",
-    #if defined(__aarch64__)
-        "ARM64-v8a"
-    #elif defined(__arm__)
-        "ARMv7a"
-    #else
-        "Unknown"
-    #endif
-    );
-    
-    if (ImGui::Button("Test Button")) {
-        LOGI("Tombol Test Ditekan");
+// Path Konfigurasi
+const std::string CONFIG_PATH = "/storage/emulated/0/Android/data/com.mobile.legends/files/config.json";
+
+// --- Hooks for Methods ---
+bool (*orig_IsForbidSkin)(uint32_t, bool);
+bool My_IsForbidSkin(uint32_t skinId, bool filterLuaCheck) {
+    // Return false to allow seeing/using unreleased skins
+    return false;
+}
+
+// --- Config Reader ---
+void ReadConfig() {
+    std::ifstream configFile(CONFIG_PATH);
+    if (configFile.is_open()) {
+        try {
+            json j;
+            configFile >> j;
+
+            // Parsing JSON dengan aman
+            if (j.contains("UnlockCustomSkin")) g_UnlockSkins = j["UnlockCustomSkin"].get<bool>();
+            if (j.contains("DebugMode")) g_DebugMode = j["DebugMode"].get<bool>();
+            if (j.contains("SeeUnreleasedSkins")) g_SeeUnreleasedSkins = j["SeeUnreleasedSkins"].get<bool>();
+            if (j.contains("SpoofZoneId")) g_SpoofZoneId = j["SpoofZoneId"].get<bool>();
+            if (j.contains("CustomZoneId")) g_CustomZoneId = j["CustomZoneId"].get<int>();
+            if (j.contains("EnableDebugMenu")) g_EnableDebugMenu = j["EnableDebugMenu"].get<bool>();
+
+            // LOGI jika debug aktif
+            if (g_DebugMode) {
+                LOGI("Config Loaded: UnlockSkin=%d, SeeUnreleasedSkins=%d, SpoofZoneId=%d, CustomZoneId=%d, EnableDebugMenu=%d",
+                     g_UnlockSkins, g_SeeUnreleasedSkins, g_SpoofZoneId, g_CustomZoneId, g_EnableDebugMenu);
+            }
+        } catch (json::parse_error& e) {
+            LOGE("JSON Parse Error: %s", e.what());
+        }
+        configFile.close();
+    } else {
+        // Jika file tidak ada, buat file default (Agar user tidak bingung)
+        LOGE("Config file not found. Creating default at: %s", CONFIG_PATH.c_str());
+
+        std::ofstream outFile(CONFIG_PATH);
+        if (outFile.is_open()) {
+            json j;
+            j["UnlockCustomSkin"] = true;
+            j["SeeUnreleasedSkins"] = true;
+            j["DebugMode"] = true; // Enable debug by default for new file
+            j["SpoofZoneId"] = false;
+            j["CustomZoneId"] = 50001;
+            j["EnableDebugMenu"] = true;
+
+            outFile << j.dump(4);
+            outFile.close();
+
+            // Apply immediately
+            g_UnlockSkins = true;
+            g_SeeUnreleasedSkins = true;
+            g_DebugMode = true;
+            g_SpoofZoneId = false;
+            g_CustomZoneId = 50001;
+            g_EnableDebugMenu = true;
+
+            LOGI("Default config created successfully.");
+        } else {
+            LOGE("Failed to create config file. Check permissions.");
+        }
+    }
+}
+
+// --- Features Logic ---
+void ApplyFeatures() {
+    // Pastikan il2cpp sudah ter-attach
+    if (!Il2CppIsAssembliesLoaded()) return;
+
+    // --- FITUR 1: Unlock Skin (Client Side - Custom Mode) ---
+    // Sekarang ditangani oleh UnlockSkin.h via InitUnlockSkin()
+
+    // Variabel statis untuk menghindari pencarian string berulang
+    static bool hasInitOffsets = false;
+    static uintptr_t targetFieldOffset = 0;
+    static void* isForbidSkinAddr = nullptr;
+    static bool isHooked = false;
+
+    if (!hasInitOffsets) {
+        // 1. Get Static Field Offset for Guide_Battle (Masih dipakai untuk Guide)
+        targetFieldOffset = Il2CppGetStaticFieldOffset("Assembly-CSharp.dll", "", "Guide_Battle", "m_RobotGuideCanSelectSkin");
+
+        // 2. Get Method Addresses
+        isForbidSkinAddr = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsForbidSkin", 2);
+
+        if (targetFieldOffset != 0 && targetFieldOffset != (uintptr_t)-1) {
+             hasInitOffsets = true;
+             if (g_DebugMode) {
+                 LOGI("Found Offset: Guide_Battle.m_RobotGuideCanSelectSkin = %lx", (unsigned long)targetFieldOffset);
+                 if (isForbidSkinAddr) LOGI("Found Method: SystemData.IsForbidSkin = %p", isForbidSkinAddr);
+             }
+        } else {
+             // Reset if failed, to try again next time (maybe il2cpp not fully ready despite check)
+             targetFieldOffset = 0;
+        }
     }
 
-    ImGui::End();
-}
-
-// --- Setup ImGui ---
-void SetupImGui() {
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
-
-    // Setup Style
-    ImGui::StyleColorsDark();
-    ImGui::GetStyle().ScaleAllSizes(3.0f); // Skala untuk HP
-
-    // Init Backend
-    ImGui_ImplOpenGL3_Init("#version 100");
-}
-
-// --- Hooks ---
-// Hook Input: Agar menu bisa disentuh
-void MyInput(void *thiz, void *ex_ab, void *ex_ac) {
-    orig_Input(thiz, ex_ab, ex_ac);
-    ImGui_ImplAndroid_HandleInputEvent((AInputEvent*)thiz);
-}
-
-// Hook SwapBuffers: Untuk menggambar menu
-EGLBoolean MyEglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
-    static bool isSetup = false;
-    if (!isSetup) {
-        SetupImGui();
-        isSetup = true;
-        LOGI("ImGui Initialized");
+    // Apply Field Patch
+    if (hasInitOffsets && g_UnlockSkins) {
+        bool currentValue = false;
+        // Use Tools::ReadAddr as per "Safe Logic" suggestion
+        if (Tools::ReadAddr((void*)targetFieldOffset, &currentValue, sizeof(bool))) {
+            if (!currentValue) { // Hanya tulis jika nilai masih false
+                bool trueValue = true;
+                if (Tools::WriteAddr((void*)targetFieldOffset, &trueValue, sizeof(bool))) {
+                     if (g_DebugMode) LOGI("Activated Skin Select Logic (Set to true)");
+                }
+            }
+        }
     }
 
-    ImGuiIO& io = ImGui::GetIO();
+    // Apply Method Hooks
+    if (!isHooked) {
+        if (g_SeeUnreleasedSkins && isForbidSkinAddr) {
+            Tools::Hook(isForbidSkinAddr, (void*)My_IsForbidSkin, (void**)&orig_IsForbidSkin);
+            if (g_DebugMode) LOGI("Hooked SystemData.IsForbidSkin");
+        }
 
-    // Update Display Size
-    EGLint width, height;
-    eglQuerySurface(dpy, surface, EGL_WIDTH, &width);
-    eglQuerySurface(dpy, surface, EGL_HEIGHT, &height);
-    io.DisplaySize = ImVec2((float)width, (float)height);
+        // Init Feature Modules (Hanya sekali)
+        InitUnlockSkin();
+        InitGameMaster();
 
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui::NewFrame();
-
-    DrawMenu(); // Gambar menu kita
-
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-    return orig_eglSwapBuffers(dpy, surface);
+        isHooked = true;
+    }
 }
 
-// --- Entry Point ---
-void *MainThread(void *) {
-    LOGI("MainThread Started. Waiting for library...");
-    // Tunggu sampai library sistem siap (opsional, tergantung game)
+// --- Main Loop (Ghost Thread) ---
+void *StealthThread(void *) {
+    LOGI("Stealth Service Started...");
+
+    // Tunggu game load library il2cpp
     sleep(5);
 
-    // 1. Hook Graphics (EGL)
-    void *eglSym = xdl_sym(xdl_open("libEGL.so", XDL_DEFAULT), "eglSwapBuffers", nullptr);
-    if (eglSym) {
-        DobbyHook(eglSym, (void*)MyEglSwapBuffers, (void**)&orig_eglSwapBuffers);
-        LOGI("Hooked eglSwapBuffers");
-    } else {
-        LOGE("Failed to find eglSwapBuffers");
-    }
+    // Attach Il2Cpp Helper
+    Il2CppAttach();
 
-    // 2. Hook Input (libinput.so)
-    // Catatan: Symbol input mungkin berbeda tiap versi Android, ini contoh umum
-    void *inputSym = xdl_sym(xdl_open("libinput.so", XDL_DEFAULT), "_ZN7android13InputConsumer21initializeMotionEventEPNS_11MotionEventEPKNS_12InputMessageE", nullptr);
-    if (inputSym) {
-        DobbyHook(inputSym, (void*)MyInput, (void**)&orig_Input);
-        LOGI("Hooked Input");
-    } else {
-         LOGE("Failed to find Input symbol");
-    }
+    while (true) {
+        // 1. Baca Config
+        ReadConfig();
 
-    LOGI("CleanMod Loaded Successfully");
+        // 2. Terapkan Fitur
+        ApplyFeatures();
+
+        // 3. Tidur 3 detik (Hemat CPU & Mengurangi deteksi polling agresif)
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+    }
 
     return nullptr;
 }
 
+// --- Entry Point ---
 __attribute__((constructor))
 void Initializer() {
     pthread_t pt;
-    pthread_create(&pt, NULL, MainThread, NULL);
+    pthread_create(&pt, NULL, StealthThread, NULL);
 }
 
 extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
-    LOGI("JNI_OnLoad called - Library loaded via System.loadLibrary");
     return JNI_VERSION_1_6;
 }

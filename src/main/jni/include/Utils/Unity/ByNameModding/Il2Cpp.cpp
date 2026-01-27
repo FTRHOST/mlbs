@@ -3,6 +3,9 @@
 #include "Includes.h"
 #include "fake_dlfcn.h"
 
+#ifdef LOG_TAG
+#undef LOG_TAG
+#endif
 #define LOG_TAG "DarkTeam-Il2Cpp"
 
 #define IL2CPP_LOGI(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
@@ -85,7 +88,10 @@ UTF32 surrogate_to_utf32(UTF16 high, UTF16 low) {
 const char* utf16_to_utf8(const UTF16* source, size_t len) {
     std::u16string s(source, source + len);
     std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
-    return convert.to_bytes(s).c_str();
+    std::string bytes = convert.to_bytes(s);
+    char* result = new char[bytes.size() + 1];
+    strcpy(result, bytes.c_str());
+    return result;
 }
 
 const wchar_t* utf16_to_utf32(const UTF16* source, size_t len) {
