@@ -86,8 +86,8 @@ void SendSelectSkin(void* thiz, uint32_t skinId, uint32_t heroId) {
     }
 
     // Cek kepemilikan asli menggunakan fungsi asli (jika valid)
-    bool realOwnership = false;
-    if (oIsHaveSkin) realOwnership = oIsHaveSkin(nullptr, skinId); // WARNING: Passing nullptr might crash specific implementations, assuming static or handled check above.
+    // bool realOwnership = false;
+    // if (oIsHaveSkin) realOwnership = oIsHaveSkin(nullptr, skinId); // WARNING: Passing nullptr might crash specific implementations, assuming static or handled check above.
     // Correction: IsHaveSkin usually needs instance. But if we can't check, assume not owned if spoofing active.
     // Let's rely on g_UnlockSkins logic. If we selected a skin, and g_UnlockSkins is on, we try to spoof if it's not a default skin.
 
@@ -112,12 +112,10 @@ void SetPlayerData(void* thiz, uintptr_t playerInfo, uint32_t camp) {
         return;
     }
 
-    oSetPlayerData(thiz, playerInfo, camp);
-
     if (g_UnlockSkins && g_SpoofedSkinID != 0) {
         // Ambil UID Player Sendiri
         uint64_t myUid = 0;
-        Il2CppGetStaticFieldValue("Assembly-CSharp.dll", "SystemData", "m_uiID", &myUid);
+        Il2CppGetStaticFieldValue("Assembly-CSharp.dll", "", "SystemData", "m_uiID", &myUid);
 
         // Cari offset di struct BattlePlayerInfo
         static size_t off_uiSelHero = Il2CppGetFieldOffset("Assembly-CSharp.dll", "MTTDProto", "BattlePlayerInfo", "uiHeroIDChoose"); // Corrected from dump: uiHeroIDChoose
@@ -150,6 +148,8 @@ void SetPlayerData(void* thiz, uintptr_t playerInfo, uint32_t camp) {
             }
         }
     }
+
+    oSetPlayerData(thiz, playerInfo, camp);
 }
 
 // --- Init Skin Hooks ---
