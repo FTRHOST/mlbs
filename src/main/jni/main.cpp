@@ -14,6 +14,10 @@
 #include "include/Utils/Unity/ByNameModding/Il2Cpp.h"
 #include "include/Utils/Unity/ByNameModding/Tools.h"
 
+// Include Feature Modules
+#include "feature/UnlockSkin.h"
+#include "feature/GameMaster.h"
+
 // Undefine macros from Includes.h to avoid warnings
 #ifdef LOG_TAG
 #undef LOG_TAG
@@ -48,30 +52,6 @@ bool (*orig_IsForbidSkin)(uint32_t, bool);
 bool My_IsForbidSkin(uint32_t skinId, bool filterLuaCheck) {
     // Return false to allow seeing/using unreleased skins
     return false;
-}
-
-bool (*orig_IsCanUseSkin)(int32_t);
-bool My_IsCanUseSkin(int32_t heroid) {
-    return true; // Always allow using skin
-}
-
-// int32_t (*orig_GetLoginZoneId)();
-// int32_t My_GetLoginZoneId() {
-//     if (g_SpoofZoneId) {
-//         return g_CustomZoneId;
-//     }
-//     return orig_GetLoginZoneId();
-// }
-
-void (*orig_TestGM_Update)(void*);
-void My_TestGM_Update(void* instance) {
-    orig_TestGM_Update(instance);
-    if (g_EnableDebugMenu && instance != nullptr) {
-        // isThread offset 0x18 (int/enum) -> Set to 2 (On)
-        // debugMoreInfo offset 0x24 (bool) -> Set to true
-        *(int*)((uintptr_t)instance + 0x18) = 2;
-        *(bool*)((uintptr_t)instance + 0x24) = true;
-    }
 }
 
 // --- Config Reader ---
@@ -137,36 +117,26 @@ void ApplyFeatures() {
     if (!Il2CppIsAssembliesLoaded()) return;
 
     // --- FITUR 1: Unlock Skin (Client Side - Custom Mode) ---
-    // Target Class: Guide_Battle
-    // Field: m_RobotGuideCanSelectSkin
+    // Sekarang ditangani oleh UnlockSkin.h via InitUnlockSkin()
 
     // Variabel statis untuk menghindari pencarian string berulang
     static bool hasInitOffsets = false;
     static uintptr_t targetFieldOffset = 0;
     static void* isForbidSkinAddr = nullptr;
-    static void* isCanUseSkinAddr = nullptr;
-    static void* testGmUpdateAddr = nullptr;
-    // static void* getLoginZoneIdAddr = nullptr;
     static bool isHooked = false;
 
     if (!hasInitOffsets) {
-        // 1. Get Static Field Offset for Guide_Battle
+        // 1. Get Static Field Offset for Guide_Battle (Masih dipakai untuk Guide)
         targetFieldOffset = Il2CppGetStaticFieldOffset("Assembly-CSharp.dll", "", "Guide_Battle", "m_RobotGuideCanSelectSkin");
 
         // 2. Get Method Addresses
         isForbidSkinAddr = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsForbidSkin", 2);
-        isCanUseSkinAddr = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsCanUseSkin", 1);
-        testGmUpdateAddr = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "TestGM", "Update", 0);
-        // getLoginZoneIdAddr = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "LoginCLibraryUtils", "GetLoginZoneId", 0);
 
         if (targetFieldOffset != 0 && targetFieldOffset != (uintptr_t)-1) {
              hasInitOffsets = true;
              if (g_DebugMode) {
                  LOGI("Found Offset: Guide_Battle.m_RobotGuideCanSelectSkin = %lx", (unsigned long)targetFieldOffset);
                  if (isForbidSkinAddr) LOGI("Found Method: SystemData.IsForbidSkin = %p", isForbidSkinAddr);
-                 if (isCanUseSkinAddr) LOGI("Found Method: SystemData.IsCanUseSkin = %p", isCanUseSkinAddr);
-                 if (testGmUpdateAddr) LOGI("Found Method: TestGM.Update = %p", testGmUpdateAddr);
-                 // if (getLoginZoneIdAddr) LOGI("Found Method: LoginCLibraryUtils.GetLoginZoneId = %p", getLoginZoneIdAddr);
              }
         } else {
              // Reset if failed, to try again next time (maybe il2cpp not fully ready despite check)
@@ -195,21 +165,9 @@ void ApplyFeatures() {
             if (g_DebugMode) LOGI("Hooked SystemData.IsForbidSkin");
         }
 
-        if (g_UnlockSkins && isCanUseSkinAddr) {
-             Tools::Hook(isCanUseSkinAddr, (void*)My_IsCanUseSkin, (void**)&orig_IsCanUseSkin);
-             if (g_DebugMode) LOGI("Hooked SystemData.IsCanUseSkin");
-        }
-
-        if (g_EnableDebugMenu && testGmUpdateAddr) {
-            Tools::Hook(testGmUpdateAddr, (void*)My_TestGM_Update, (void**)&orig_TestGM_Update);
-            if (g_DebugMode) LOGI("Hooked TestGM.Update");
-        }
-
-        // Always hook GetLoginZoneId to handle dynamic toggling via global var
-        // if (getLoginZoneIdAddr) {
-        //     Tools::Hook(getLoginZoneIdAddr, (void*)My_GetLoginZoneId, (void**)&orig_GetLoginZoneId);
-        //      if (g_DebugMode) LOGI("Hooked LoginCLibraryUtils.GetLoginZoneId");
-        // }
+        // Init Feature Modules (Hanya sekali)
+        InitUnlockSkin();
+        InitGameMaster();
 
         isHooked = true;
     }
