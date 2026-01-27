@@ -38,6 +38,7 @@ bool g_DebugMode = false;
 bool g_SeeUnreleasedSkins = false;
 bool g_SpoofZoneId = false;
 int g_CustomZoneId = 50001;
+bool g_EnableDebugMenu = false;
 
 // Path Konfigurasi
 const std::string CONFIG_PATH = "/storage/emulated/0/Android/data/com.mobile.legends/files/config.json";
@@ -62,6 +63,17 @@ bool My_IsCanUseSkin(int32_t heroid) {
 //     return orig_GetLoginZoneId();
 // }
 
+void (*orig_TestGM_Update)(void*);
+void My_TestGM_Update(void* instance) {
+    orig_TestGM_Update(instance);
+    if (g_EnableDebugMenu && instance != nullptr) {
+        // isThread offset 0x18 (int/enum) -> Set to 2 (On)
+        // debugMoreInfo offset 0x24 (bool) -> Set to true
+        *(int*)((uintptr_t)instance + 0x18) = 2;
+        *(bool*)((uintptr_t)instance + 0x24) = true;
+    }
+}
+
 // --- Config Reader ---
 void ReadConfig() {
     std::ifstream configFile(CONFIG_PATH);
@@ -76,11 +88,12 @@ void ReadConfig() {
             if (j.contains("SeeUnreleasedSkins")) g_SeeUnreleasedSkins = j["SeeUnreleasedSkins"].get<bool>();
             if (j.contains("SpoofZoneId")) g_SpoofZoneId = j["SpoofZoneId"].get<bool>();
             if (j.contains("CustomZoneId")) g_CustomZoneId = j["CustomZoneId"].get<int>();
+            if (j.contains("EnableDebugMenu")) g_EnableDebugMenu = j["EnableDebugMenu"].get<bool>();
 
             // LOGI jika debug aktif
             if (g_DebugMode) {
-                LOGI("Config Loaded: UnlockSkin=%d, SeeUnreleasedSkins=%d, SpoofZoneId=%d, CustomZoneId=%d",
-                     g_UnlockSkins, g_SeeUnreleasedSkins, g_SpoofZoneId, g_CustomZoneId);
+                LOGI("Config Loaded: UnlockSkin=%d, SeeUnreleasedSkins=%d, SpoofZoneId=%d, CustomZoneId=%d, EnableDebugMenu=%d",
+                     g_UnlockSkins, g_SeeUnreleasedSkins, g_SpoofZoneId, g_CustomZoneId, g_EnableDebugMenu);
             }
         } catch (json::parse_error& e) {
             LOGE("JSON Parse Error: %s", e.what());
@@ -98,6 +111,7 @@ void ReadConfig() {
             j["DebugMode"] = true; // Enable debug by default for new file
             j["SpoofZoneId"] = false;
             j["CustomZoneId"] = 50001;
+            j["EnableDebugMenu"] = true;
 
             outFile << j.dump(4);
             outFile.close();
@@ -108,6 +122,7 @@ void ReadConfig() {
             g_DebugMode = true;
             g_SpoofZoneId = false;
             g_CustomZoneId = 50001;
+            g_EnableDebugMenu = true;
 
             LOGI("Default config created successfully.");
         } else {
@@ -130,6 +145,7 @@ void ApplyFeatures() {
     static uintptr_t targetFieldOffset = 0;
     static void* isForbidSkinAddr = nullptr;
     static void* isCanUseSkinAddr = nullptr;
+    static void* testGmUpdateAddr = nullptr;
     // static void* getLoginZoneIdAddr = nullptr;
     static bool isHooked = false;
 
@@ -140,6 +156,7 @@ void ApplyFeatures() {
         // 2. Get Method Addresses
         isForbidSkinAddr = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsForbidSkin", 2);
         isCanUseSkinAddr = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsCanUseSkin", 1);
+        testGmUpdateAddr = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "TestGM", "Update", 0);
         // getLoginZoneIdAddr = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "LoginCLibraryUtils", "GetLoginZoneId", 0);
 
         if (targetFieldOffset != 0 && targetFieldOffset != (uintptr_t)-1) {
@@ -148,6 +165,7 @@ void ApplyFeatures() {
                  LOGI("Found Offset: Guide_Battle.m_RobotGuideCanSelectSkin = %lx", (unsigned long)targetFieldOffset);
                  if (isForbidSkinAddr) LOGI("Found Method: SystemData.IsForbidSkin = %p", isForbidSkinAddr);
                  if (isCanUseSkinAddr) LOGI("Found Method: SystemData.IsCanUseSkin = %p", isCanUseSkinAddr);
+                 if (testGmUpdateAddr) LOGI("Found Method: TestGM.Update = %p", testGmUpdateAddr);
                  // if (getLoginZoneIdAddr) LOGI("Found Method: LoginCLibraryUtils.GetLoginZoneId = %p", getLoginZoneIdAddr);
              }
         } else {
@@ -180,6 +198,11 @@ void ApplyFeatures() {
         if (g_UnlockSkins && isCanUseSkinAddr) {
              Tools::Hook(isCanUseSkinAddr, (void*)My_IsCanUseSkin, (void**)&orig_IsCanUseSkin);
              if (g_DebugMode) LOGI("Hooked SystemData.IsCanUseSkin");
+        }
+
+        if (g_EnableDebugMenu && testGmUpdateAddr) {
+            Tools::Hook(testGmUpdateAddr, (void*)My_TestGM_Update, (void**)&orig_TestGM_Update);
+            if (g_DebugMode) LOGI("Hooked TestGM.Update");
         }
 
         // Always hook GetLoginZoneId to handle dynamic toggling via global var
