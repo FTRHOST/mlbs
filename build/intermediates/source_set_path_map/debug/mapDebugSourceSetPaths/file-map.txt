@@ -1,8 +1,8 @@
-com.android.support-pngs-0 /home/petwir/StudioProjects/imgc++ui/build/generated/res/pngs/debug
-com.android.support-resValues-1 /home/petwir/StudioProjects/imgc++ui/build/generated/res/resValues/debug
-com.android.support-updated_navigation_xml-2 /home/petwir/StudioProjects/imgc++ui/build/generated/updated_navigation_xml/debug
-com.android.support-packageDebugResources-3 /home/petwir/StudioProjects/imgc++ui/build/intermediates/incremental/debug/packageDebugResources/merged.dir
-com.android.support-packageDebugResources-4 /home/petwir/StudioProjects/imgc++ui/build/intermediates/incremental/debug/packageDebugResources/stripped.dir
-com.android.support-debug-5 /home/petwir/StudioProjects/imgc++ui/build/intermediates/merged_res/debug/mergeDebugResources
-com.android.support-debug-6 /home/petwir/StudioProjects/imgc++ui/src/debug/res
-com.android.support-main-7 /home/petwir/StudioProjects/imgc++ui/src/main/res
+com.android.support-pngs-0 /app/build/generated/res/pngs/debug
+com.android.support-resValues-1 /app/build/generated/res/resValues/debug
+com.android.support-updated_navigation_xml-2 /app/build/generated/updated_navigation_xml/debug
+com.android.support-packageDebugResources-3 /app/build/intermediates/incremental/debug/packageDebugResources/merged.dir
+com.android.support-packageDebugResources-4 /app/build/intermediates/incremental/debug/packageDebugResources/stripped.dir
+com.android.support-debug-5 /app/build/intermediates/merged_res/debug/mergeDebugResources
+com.android.support-debug-6 /app/src/debug/res
+com.android.support-main-7 /app/src/main/res

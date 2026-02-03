@@ -1,12 +1,11 @@
 #pragma once
 
 #include "Utils.h"
-#include "jniStuff.h"
-#include "ByNameModding/Tools.h"
-#include "ByNameModding/fake_dlfcn.h"
-#include "ByNameModding/Il2Cpp.h"
-#include "include/Utils/MonoString.h"
-#include "Toggle.h"
+#include "Utils/jniStuff.h"
+#include "Utils/Unity/ByNameModding/Tools.h"
+#include "Utils/Unity/ByNameModding/fake_dlfcn.h"
+#include "Utils/Unity/ByNameModding/Il2Cpp.h"
+#include "Utils/MonoString.h"
 
 int glWidth, glHeight;
 

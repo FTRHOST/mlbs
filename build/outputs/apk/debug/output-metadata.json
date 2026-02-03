@@ -13,7 +13,7 @@
       "attributes": [],
       "versionCode": 1,
       "versionName": "3.2",
-      "outputFile": "imgc++ui-debug.apk"
+      "outputFile": "app-debug.apk"
     }
   ],
   "elementType": "File",

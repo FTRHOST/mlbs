@@ -36,8 +36,7 @@
 using json = nlohmann::json;
 
 // --- Global Config Variables ---
-// Default values
-bool g_UnlockSkins = false;
+// g_UnlockSkin defined in UnlockSkin.h
 bool g_DebugMode = false;
 bool g_SeeUnreleasedSkins = false;
 bool g_SpoofZoneId = false;
@@ -63,7 +62,7 @@ void ReadConfig() {
             configFile >> j;
 
             // Parsing JSON dengan aman
-            if (j.contains("UnlockCustomSkin")) g_UnlockSkins = j["UnlockCustomSkin"].get<bool>();
+            if (j.contains("UnlockCustomSkin")) g_UnlockSkin = j["UnlockCustomSkin"].get<bool>();
             if (j.contains("DebugMode")) g_DebugMode = j["DebugMode"].get<bool>();
             if (j.contains("SeeUnreleasedSkins")) g_SeeUnreleasedSkins = j["SeeUnreleasedSkins"].get<bool>();
             if (j.contains("SpoofZoneId")) g_SpoofZoneId = j["SpoofZoneId"].get<bool>();
@@ -73,7 +72,7 @@ void ReadConfig() {
             // LOGI jika debug aktif
             if (g_DebugMode) {
                 LOGI("Config Loaded: UnlockSkin=%d, SeeUnreleasedSkins=%d, SpoofZoneId=%d, CustomZoneId=%d, EnableDebugMenu=%d",
-                     g_UnlockSkins, g_SeeUnreleasedSkins, g_SpoofZoneId, g_CustomZoneId, g_EnableDebugMenu);
+                     g_UnlockSkin, g_SeeUnreleasedSkins, g_SpoofZoneId, g_CustomZoneId, g_EnableDebugMenu);
             }
         } catch (json::parse_error& e) {
             LOGE("JSON Parse Error: %s", e.what());
@@ -97,7 +96,7 @@ void ReadConfig() {
             outFile.close();
 
             // Apply immediately
-            g_UnlockSkins = true;
+            g_UnlockSkin = true;
             g_SeeUnreleasedSkins = true;
             g_DebugMode = true;
             g_SpoofZoneId = false;
@@ -145,7 +144,7 @@ void ApplyFeatures() {
     }
 
     // Apply Field Patch
-    if (hasInitOffsets && g_UnlockSkins) {
+    if (hasInitOffsets && g_UnlockSkin) {
         bool currentValue = false;
         // Use Tools::ReadAddr as per "Safe Logic" suggestion
         if (Tools::ReadAddr((void*)targetFieldOffset, &currentValue, sizeof(bool))) {

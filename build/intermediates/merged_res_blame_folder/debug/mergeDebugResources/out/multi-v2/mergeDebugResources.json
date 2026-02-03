@@ -4,17 +4,24 @@
             "outputFile": "com.android.support-debug-4:/values_values.arsc.flat",
             "map": [
                 {
-                    "source": "/home/petwir/StudioProjects/imgc++ui/src/main/res/values/colors.xml",
+                    "source": "/app/src/main/res/values/strings.xml",
                     "from": {
-                        "startLines": "2",
+                        "startLines": "1",
                         "startColumns": "4",
-                        "startOffsets": "55",
-                        "endColumns": "49",
-                        "endOffsets": "100"
+                        "startOffsets": "16",
+                        "endColumns": "46",
+                        "endOffsets": "58"
+                    },
+                    "to": {
+                        "startLines": "3",
+                        "startColumns": "4",
+                        "startOffsets": "105",
+                        "endColumns": "46",
+                        "endOffsets": "147"
                     }
                 },
                 {
-                    "source": "/home/petwir/StudioProjects/imgc++ui/src/main/res/values/styles.xml",
+                    "source": "/app/src/main/res/values/styles.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
@@ -33,20 +40,13 @@
                     }
                 },
                 {
-                    "source": "/home/petwir/StudioProjects/imgc++ui/src/main/res/values/strings.xml",
+                    "source": "/app/src/main/res/values/colors.xml",
                     "from": {
-                        "startLines": "1",
+                        "startLines": "2",
                         "startColumns": "4",
-                        "startOffsets": "16",
-                        "endColumns": "46",
-                        "endOffsets": "58"
-                    },
-                    "to": {
-                        "startLines": "3",
-                        "startColumns": "4",
-                        "startOffsets": "105",
-                        "endColumns": "46",
-                        "endOffsets": "147"
+                        "startOffsets": "55",
+                        "endColumns": "49",
+                        "endOffsets": "100"
                     }
                 }
             ]
