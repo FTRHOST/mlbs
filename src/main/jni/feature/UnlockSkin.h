@@ -33,7 +33,7 @@ uintptr_t CmdHeroStatue__ctor = 0;
 
 bool ndUnlockSkin3 = false;
 bool ndUnlockSkin = true;
-bool ndUnlockSkin2 = false;
+bool ndUnlockSkin2 = true;
 bool ndUnlockSkin22 = false;
 
 uint32_t m_HeroID = 0, m_SkinID = 0;
@@ -60,25 +60,25 @@ DefineHook(CmdHeroSkin *, GetHeroSkin, (void * unk, uintptr_t m_heroskins, uint 
     return instance;
 }
 
-DefineHook(CmdHeroSkin *, GetMCLimitSkin, (void * unk, uint skinId)) {
-    auto ret = oGetMCLimitSkin(unk, skinId);
-
-    if (ret || !ndUnlockSkin)
-        return ret;
-
-    if (CmdHeroSkin__ctor == 0) return ret;
-
-    auto  MTTDProto_CmdHeroSkin_ctor = (void *(*)(CmdHeroSkin *)) (CmdHeroSkin__ctor);
-    auto instance = (CmdHeroSkin *) Il2CppCreateClassInstance("Assembly-CSharp.dll", "MTTDProto", "CmdHeroSkin");
-    if (instance && MTTDProto_CmdHeroSkin_ctor(instance)) {
-        instance->iId = skinId;
-        instance->iLimitTime = 0;
-        instance->iSource = 0;
-        instance->iLimitTimeMagicChess= 0;
-        instance->iGetTime = 0;
-    }
-    return instance;
-}
+// DefineHook(CmdHeroSkin *, GetMCLimitSkin, (void * unk, uint skinId)) {
+//     auto ret = oGetMCLimitSkin(unk, skinId);
+//
+//     if (ret || !ndUnlockSkin)
+//         return ret;
+//
+//     if (CmdHeroSkin__ctor == 0) return ret;
+//
+//     auto  MTTDProto_CmdHeroSkin_ctor = (void *(*)(CmdHeroSkin *)) (CmdHeroSkin__ctor);
+//     auto instance = (CmdHeroSkin *) Il2CppCreateClassInstance("Assembly-CSharp.dll", "MTTDProto", "CmdHeroSkin");
+//     if (instance && MTTDProto_CmdHeroSkin_ctor(instance)) {
+//         instance->iId = skinId;
+//         instance->iLimitTime = 0;
+//         instance->iSource = 0;
+//         instance->iLimitTimeMagicChess= 0;
+//         instance->iGetTime = 0;
+//     }
+//     return instance;
+// }
 
 DefineHook(CmdHeroStatue *, GetHeroHolyStatue, (void * unk, uintptr_t m_heroStatues, uint statueid)) {
     auto ret = oGetHeroHolyStatue(unk, m_heroStatues, statueid);
@@ -178,12 +178,12 @@ DefineHook(CmdHeroStatue *, IsHaveStatueForever, (void * unk, uint32_t statueid)
     }
     return instance;
 }
-DefineHook(uint, GetExpiredCardSkinLimitTime, (void * unk, uint32_t skinid)) {
-    if (ndUnlockSkin2) {
-        return oGetExpiredCardSkinLimitTime(unk,skinid);
-    }
-    return 0; // fallback
-}
+// DefineHook(uint, GetExpiredCardSkinLimitTime, (void * unk, uint32_t skinid)) {
+//     if (ndUnlockSkin2) {
+//         return oGetExpiredCardSkinLimitTime(unk,skinid);
+//     }
+//     return 0; // fallback
+// }
 DefineHook(bool, GetLeaderSkinBForbid, (void * unk, uint32_t skinid)) {
     if (ndUnlockSkin2) {
         return true;
@@ -196,12 +196,12 @@ DefineHook(bool, BRankHeroCanUse, (void * unk, uint32_t skinid)) {
     }
     return false; // fallback
 }
-DefineHook(bool, ContainSkin, (void * unk, uint32_t skinid)) {
-    if (ndUnlockSkin2) {
-        return false;
-    }
-    return true; // fallback
-}
+// DefineHook(bool, ContainSkin, (void * unk, uint32_t skinid)) {
+//     if (ndUnlockSkin2) {
+//         return false;
+//     }
+//     return true; // fallback
+// }
 DefineHook(bool, UIChooseHero_ShowSkinExpiryDate, (void * unk)) {
     return true;
 }
@@ -219,9 +219,9 @@ DefineHook(bool, CheckReputationUnlockSkin, (void * unk, int skinid)) {
 DefineHook(bool, SendData, (void * unk, int skinid)) {
     return true;
 }
-DefineHook(bool, GetStarSkinRank, (void * unk, uint32_t skinid)) {
-    return true;
-}
+// DefineHook(bool, GetStarSkinRank, (void * unk, uint32_t skinid)) {
+//     return true;
+// }
 DefineHook(bool, IsForbidARSkin, (void * unk, uint32_t id)) {
     return false;
 }
@@ -242,6 +242,25 @@ DefineHook(bool, IsHeroInShop, (void * unk, int heroId)) {
     return true;
 }
 
+// == NEW ==
+
+DefineHook(bool, IsForbidNewHeroList, (void * unk, uint32_t heroId)) {
+    return false;
+}
+
+DefineHook(bool, IsForbidARHero, (void * unk, uint32_t id)) {
+    return false;
+}
+
+DefineHook(bool, IsForbidHeadFrameForce, (void * unk, uint32_t frameId)) {
+    return false;
+}
+
+DefineHook(bool, IsForbidHeadFrame, (void * unk, uint32_t frameId)) {
+    return false;
+}
+
+// =======
 DefineHook(void, SaveSelectHeroSkinId, (uintptr_t thiz, uint32_t skinid, uint32_t heroid)) {
     if (oIsHaveSkin(0, skinid) || oIsHaveSkinForever(0, skinid) || ndUnlockSkin) {
         m_SkinID = 0;
@@ -264,7 +283,7 @@ DefineHook(void, RefreshSkinDic, (uintptr_t thiz, uint32_t heroid, uint skinid, 
         Il2CppGetStaticFieldValue("Assembly-CSharp.dll", "", "SystemData", "m_uiID", &m_uiID);
         return oRefreshSkinDic(thiz, m_HeroID, m_SkinID, m_uiID);
     }
-    m_HeroID = *(uint32_t *) ((uintptr_t) thiz + 40); // Assuming UIRankHero_ChangeShow_iSelfHero offset is needed, but we don't have it. Using a safe default or removing the line might be better if we can't find offset. 
+    m_HeroID = *(uint32_t *) ((uintptr_t) thiz + 28); // Assuming UIRankHero_ChangeShow_iSelfHero offset is needed, but we don't have it. Using a safe default or removing the line might be better if we can't find offset.
     // Wait, Unlock.h used: m_HeroID = *(uint32_t *) ((uintptr_t) thiz + UIRankHero_ChangeShow_iSelfHero);
     // I need to find UIRankHero_ChangeShow_iSelfHero or similar.
     // For now, let's just stick to the first branch if ndUnlockSkin2 is true.
@@ -497,8 +516,9 @@ void InitUnlockSkin() {
             else LOGE("UnlockSkin: Failed to find %s::%s", CLASS, METHOD); \
         }
 
+
     HOOK_METHOD("SystemData", "GetHeroSkin", 2, GetHeroSkin, oGetHeroSkin);
-    HOOK_METHOD("SystemData", "GetMCLimitSkin", 1, GetMCLimitSkin, oGetMCLimitSkin);
+    // HOOK_METHOD("SystemData", "GetMCLimitSkin", 1, GetMCLimitSkin, oGetMCLimitSkin);
     HOOK_METHOD("SystemData", "GetHeroHolyStatue", 2, GetHeroHolyStatue, oGetHeroHolyStatue);
     HOOK_METHOD("SystemData", "IsCanUseSkin", 1, IsCanUseSkin, oIsCanUseSkin);
     HOOK_METHOD("SystemData", "IsHaveSkin", 1, IsHaveSkin, oIsHaveSkin);
@@ -506,9 +526,9 @@ void InitUnlockSkin() {
     HOOK_METHOD("SystemData", "IsHaveStatue", 1, IsHaveStatue, oIsHaveStatue);
     HOOK_METHOD("SystemData", "IsHaveStatueForever", 1, IsHaveStatueForever, oIsHaveStatueForever);
     HOOK_METHOD("SystemData", "IsForbidStatue", 1, IsForbidStatue, oIsForbidStatue);
-    HOOK_METHOD("SystemData", "IsForbidSkin", 1, IsForbidSkin, oIsForbidSkin);
+    HOOK_METHOD("SystemData", "IsForbidSkin", 2, IsForbidSkin, oIsForbidSkin);
     HOOK_METHOD("SystemData", "IsForbidARSkin", 1, IsForbidARSkin, oIsForbidARSkin);
-    HOOK_METHOD("SystemData", "GetExpiredCardSkinLimitTime", 1, GetExpiredCardSkinLimitTime, oGetExpiredCardSkinLimitTime);
+    // HOOK_METHOD("SystemData", "GetExpiredCardSkinLimitTime", 1, GetExpiredCardSkinLimitTime, oGetExpiredCardSkinLimitTime);
     HOOK_METHOD("SystemData", "GetLeaderSkinBForbid", 1, GetLeaderSkinBForbid, oGetLeaderSkinBForbid);
 
     HOOK_METHOD("UIChooseHero", "SendSelectSkin", 2, SendSelectSkin, oSendSelectSkin);
@@ -516,7 +536,7 @@ void InitUnlockSkin() {
     HOOK_METHOD("UIRankHero", "BatttleSelectSkin2", 2, BatttleSelectSkin2, oBatttleSelectSkin2);
     HOOK_METHOD("UIRankHero", "BRankHeroCanUse", 1, BRankHeroCanUse, oBRankHeroCanUse);
     
-    HOOK_METHOD("StarMemberData", "ContainSkin", 1, ContainSkin, oContainSkin);
+    // HOOK_METHOD("StarMemberData", "ContainSkin", 1, ContainSkin, oContainSkin);
     HOOK_METHOD("UIChooseHero", "CheckHeroDefaultSkin", 2, CheckHeroDefaultSkin, oCheckHeroDefaultSkin);
     
     // Note: Some class names might need adjustment if they are nested or different.
@@ -539,12 +559,18 @@ void InitUnlockSkin() {
     // SendData ? In Unlock.h: DefineHook(bool, SendData, (void * unk, int skinid))
     // Could be SystemData::SendData?
     
-    HOOK_METHOD("SystemData", "GetStarSkinRank", 1, GetStarSkinRank, oGetStarSkinRank);
+    // HOOK_METHOD("SystemData", "GetStarSkinRank", 1, GetStarSkinRank, oGetStarSkinRank);
     HOOK_METHOD("SystemData", "IsForbidHeros", 1, IsForbidHeros, oIsForbidHeros);
     HOOK_METHOD("SystemData", "IsForbidHeroInChooseHero", 1, IsForbidHeroInChooseHero, oIsForbidHeroInChooseHero);
     HOOK_METHOD("SystemData", "IsActivityForbidHeros", 1, IsActivityForbidHeros, oIsActivityForbidHeros);
     HOOK_METHOD("SystemData", "IsLimitActiveHero", 1, IsLimitActiveHero, oIsLimitActiveHero);
     HOOK_METHOD("SystemData", "IsHeroInShop", 1, IsHeroInShop, oIsHeroInShop);
+
+    // NEW HOOK
+    HOOK_METHOD("SystemData", "IsForbidARHero", 1, IsForbidARHero, oIsForbidARHero);
+    HOOK_METHOD("SystemData", "IsForbidNewHeroList", 1, IsForbidNewHeroList, oIsForbidNewHeroList);
+    HOOK_METHOD("SystemData", "IsForbidHeadFrameForce", 1, IsForbidHeadFrameForce, oIsForbidHeadFrameForce);
+    HOOK_METHOD("SystemData", "IsForbidHeadFrame", 1, IsForbidHeadFrame, oIsForbidHeadFrame);
 
     LOGI("UnlockSkin: Hooks Applied.");
 }
