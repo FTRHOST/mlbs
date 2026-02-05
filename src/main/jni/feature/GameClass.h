@@ -1,9 +1,5 @@
 #pragma once
-
 #include "../Include.h"
-
-#pragma once
-
 
 //Class Camera
 #define Camera_get_main (uintptr_t) Il2CppGetMethodOffset("UnityEngine.dll", "UnityEngine", "Camera", "get_main")
@@ -279,7 +275,7 @@ void StopMD5Check(){
 #define SystemData_IsHaveStatue (uintptr_t) Il2CppGetMethodOffset(OBFUSCATE("Assembly-CSharp.dll"), OBFUSCATE(""), OBFUSCATE("SystemData"), OBFUSCATE("IsHaveStatue"), 1)
 #define SystemData_IsHaveStatueForever (uintptr_t) Il2CppGetMethodOffset(OBFUSCATE("Assembly-CSharp.dll"), OBFUSCATE(""), OBFUSCATE("SystemData"), OBFUSCATE("IsHaveStatueForever"), 1)
 #define SystemData_IsForbidStatue (uintptr_t) Il2CppGetMethodOffset(OBFUSCATE("Assembly-CSharp.dll"), OBFUSCATE(""), OBFUSCATE("SystemData"), OBFUSCATE("IsForbidStatue"), 1)
-#define SystemData_IsForbidSkin (uintptr_t) Il2CppGetMethodOffset(OBFUSCATE("Assembly-CSharp.dll"), OBFUSCATE(""), OBFUSCATE("SystemData"), OBFUSCATE("IsForbidSkin"), 1)
+#define SystemData_IsForbidSkin (uintptr_t) Il2CppGetMethodOffset(OBFUSCATE("Assembly-CSharp.dll"), OBFUSCATE(""), OBFUSCATE("SystemData"), OBFUSCATE("IsForbidSkin"), 2)
 #define SystemData_IsForbidARSkin (uintptr_t) Il2CppGetMethodOffset(OBFUSCATE("Assembly-CSharp.dll"), OBFUSCATE(""), OBFUSCATE("SystemData"), OBFUSCATE("IsForbidARSkin"), 1)
 #define SystemData_CheckReputationUnlockSkin (uintptr_t) Il2CppGetMethodOffset(OBFUSCATE("Assembly-CSharp.dll"), OBFUSCATE(""), OBFUSCATE("SystemData"), OBFUSCATE("CheckReputationUnlockSkin"), 1)
 #define SystemData_GetStarSkinRank (uintptr_t) Il2CppGetMethodOffset(OBFUSCATE("Assembly-CSharp.dll"), OBFUSCATE(""), OBFUSCATE("SystemData"), OBFUSCATE("GetStarSkinRank"),1)

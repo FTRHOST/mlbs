@@ -1,0 +1,2 @@
+[arm64-v8a] Compile++      : MyCleanMod <= main.cpp
+[arm64-v8a] SharedLibrary  : libMyCleanMod.so

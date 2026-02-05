@@ -1,0 +1,66 @@
+In file included from /app/src/main/jni/main.cpp:18:
+In file included from /app/src/main/jni/feature/UnlockSkin.h:2:
+In file included from /app/src/main/jni/feature/../Include.h:4:
+/app/src/main/jni/include/Utils/jniStuff.h:57:9: warning: variable 'result' is used uninitialized whenever 'if' condition is false [-Wsometimes-uninitialized]
+    if (text) {
+        ^~~~
+/app/src/main/jni/include/Utils/jniStuff.h:61:12: note: uninitialized use occurs here
+    return result;
+           ^~~~~~
+/app/src/main/jni/include/Utils/jniStuff.h:57:5: note: remove the 'if' if its condition is always true
+    if (text) {
+    ^~~~~~~~~~
+/app/src/main/jni/include/Utils/jniStuff.h:29:23: note: initialize the variable 'result' to silence this warning
+    const char *result;
+                      ^
+                       = nullptr
+/app/src/main/jni/include/Utils/jniStuff.h:93:6: warning: variable 'result' is uninitialized when used here [-Wuninitialized]
+        if (result) {
+            ^~~~~~
+/app/src/main/jni/include/Utils/jniStuff.h:67:13: note: initialize the variable 'result' to silence this warning
+        jint result;
+                   ^
+                    = 0
+In file included from /app/src/main/jni/main.cpp:18:
+In file included from /app/src/main/jni/feature/UnlockSkin.h:2:
+In file included from /app/src/main/jni/feature/../Include.h:8:
+/app/src/main/jni/include/Utils/MonoString.h:102:13: warning: address of stack memory associated with local variable 'str' returned [-Wreturn-stack-address]
+            return str.c_str();   
+                   ^~~
+In file included from /app/src/main/jni/main.cpp:19:
+In file included from /app/src/main/jni/feature/GameMaster.h:2:
+In file included from /app/src/main/jni/feature/../include/Utils/Unity/ByNameModding/Tools.h:1:
+/app/src/main/jni/include/Utils/Unity/ByNameModding/Includes.h:31:9: warning: 'LOGI' macro redefined [-Wmacro-redefined]
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
+        ^
+/app/src/main/jni/feature/../include/Utils/Logger.h:15:9: note: previous definition is here
+#define LOGI(...) ((void)__android_log_print(oINFO,  TAG, __VA_ARGS__))
+        ^
+In file included from /app/src/main/jni/main.cpp:19:
+In file included from /app/src/main/jni/feature/GameMaster.h:2:
+In file included from /app/src/main/jni/feature/../include/Utils/Unity/ByNameModding/Tools.h:1:
+/app/src/main/jni/include/Utils/Unity/ByNameModding/Includes.h:32:9: warning: 'LOGD' macro redefined [-Wmacro-redefined]
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
+        ^
+/app/src/main/jni/feature/../include/Utils/Logger.h:13:9: note: previous definition is here
+#define LOGD(...) ((void)__android_log_print(oDEBUG, TAG, __VA_ARGS__))
+        ^
+In file included from /app/src/main/jni/main.cpp:19:
+In file included from /app/src/main/jni/feature/GameMaster.h:2:
+In file included from /app/src/main/jni/feature/../include/Utils/Unity/ByNameModding/Tools.h:1:
+/app/src/main/jni/include/Utils/Unity/ByNameModding/Includes.h:33:9: warning: 'LOGW' macro redefined [-Wmacro-redefined]
+#define LOGW(...) __android_log_print(ANDROID_LOG_WARN,LOG_TAG,__VA_ARGS__)
+        ^
+/app/src/main/jni/feature/../include/Utils/Logger.h:16:9: note: previous definition is here
+#define LOGW(...) ((void)__android_log_print(oWARN,  TAG, __VA_ARGS__))
+        ^
+In file included from /app/src/main/jni/main.cpp:19:
+In file included from /app/src/main/jni/feature/GameMaster.h:2:
+In file included from /app/src/main/jni/feature/../include/Utils/Unity/ByNameModding/Tools.h:1:
+/app/src/main/jni/include/Utils/Unity/ByNameModding/Includes.h:34:9: warning: 'LOGE' macro redefined [-Wmacro-redefined]
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
+        ^
+/app/src/main/jni/feature/../include/Utils/Logger.h:14:9: note: previous definition is here
+#define LOGE(...) ((void)__android_log_print(oERROR, TAG, __VA_ARGS__))
+        ^
+7 warnings generated.
